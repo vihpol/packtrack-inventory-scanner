@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PackTrack Inventory Scanner</title>
+    <link rel="preconnect" href="https://unpkg.com" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <i data-lucide="scan-barcode"></i>
+          </div>
+          <div>
+            <strong>PackTrack</strong>
+            <span>Network warehouse</span>
+          </div>
+        </div>
+
+        <nav class="nav-tabs" aria-label="Workspace">
+          <button class="nav-tab active" data-view="packing" type="button">
+            <i data-lucide="package-check"></i>
+            <span>Packing</span>
+          </button>
+          <button class="nav-tab" data-view="inventory" type="button">
+            <i data-lucide="boxes"></i>
+            <span>Inventory</span>
+          </button>
+          <button class="nav-tab" data-view="boxes" type="button">
+            <i data-lucide="archive"></i>
+            <span>Boxes</span>
+          </button>
+          <button class="nav-tab" data-view="activity" type="button">
+            <i data-lucide="history"></i>
+            <span>Activity</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-metrics">
+          <div>
+            <span>Active box</span>
+            <strong id="activeBoxMetric">None</strong>
+          </div>
+          <div>
+            <span>Items packed</span>
+            <strong id="itemsPackedMetric">0</strong>
+          </div>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Live inventory scanner</p>
+            <h1>Pack boxes, scan assets, update stock.</h1>
+          </div>
+          <div class="operator">
+            <label for="operatorName">Operator</label>
+            <input id="operatorName" autocomplete="name" placeholder="Your name" />
+          </div>
+        </header>
+
+        <section id="packing" class="view active" aria-labelledby="packingTitle">
+          <div class="work-grid">
+            <section class="panel scanner-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2 id="packingTitle">Packing station</h2>
+                  <p>Scan by camera, USB scanner, or manual barcode entry.</p>
+                </div>
+                <button id="cameraButton" class="icon-button" type="button" title="Toggle camera scanner">
+                  <i data-lucide="camera"></i>
+                </button>
+              </div>
+
+              <div class="box-row">
+                <label for="boxId">Box ID</label>
+                <input id="boxId" placeholder="BOX-1001" />
+                <button id="newBoxButton" class="primary-button" type="button">
+                  <i data-lucide="plus"></i>
+                  <span>New Box</span>
+                </button>
+              </div>
+
+              <div class="scan-stage">
+                <video id="cameraPreview" playsinline muted></video>
+                <div id="scanTarget" class="scan-target">
+                  <i data-lucide="scan-line"></i>
+                  <span>Ready for scans</span>
+                </div>
+              </div>
+
+              <form id="scanForm" class="scan-form">
+                <label for="barcodeInput">Barcode or serial</label>
+                <div class="scan-input-row">
+                  <input id="barcodeInput" autocomplete="off" placeholder="Scan barcode" />
+                  <button class="primary-button" type="submit">
+                    <i data-lucide="scan-barcode"></i>
+                    <span>Add</span>
+                  </button>
+                </div>
+              </form>
+
+              <div id="statusMessage" class="status-message" role="status"></div>
+            </section>
+
+            <section class="panel packed-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Current box</h2>
+                  <p id="currentBoxSubtitle">Create a box to begin.</p>
+                </div>
+                <button id="sealBoxButton" class="secondary-button" type="button">
+                  <i data-lucide="lock"></i>
+                  <span>Seal</span>
+                </button>
+              </div>
+              <div id="currentBoxList" class="packed-list empty-state">
+                <i data-lucide="package-open"></i>
+                <span>No items packed yet.</span>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section id="inventory" class="view" aria-labelledby="inventoryTitle">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2 id="inventoryTitle">Inventory</h2>
+                <p>Starting quantities reduce automatically as boxes are packed.</p>
+              </div>
+              <button id="addItemButton" class="primary-button" type="button">
+                <i data-lucide="plus"></i>
+                <span>Add Item</span>
+              </button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Barcode</th>
+                    <th>Item</th>
+                    <th>Category</th>
+                    <th>Available</th>
+                    <th>Location</th>
+                  </tr>
+                </thead>
+                <tbody id="inventoryTable"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="boxes" class="view" aria-labelledby="boxesTitle">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2 id="boxesTitle">Boxes</h2>
+                <p>Review packed contents and export packing lists.</p>
+              </div>
+              <button id="exportButton" class="secondary-button" type="button">
+                <i data-lucide="download"></i>
+                <span>CSV</span>
+              </button>
+            </div>
+            <div id="boxesList" class="box-list"></div>
+          </section>
+        </section>
+
+        <section id="activity" class="view" aria-labelledby="activityTitle">
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2 id="activityTitle">Activity</h2>
+                <p>Every scan is timestamped for audit checks.</p>
+              </div>
+              <button id="resetDemoButton" class="danger-button" type="button">
+                <i data-lucide="rotate-ccw"></i>
+                <span>Reset</span>
+              </button>
+            </div>
+            <div id="activityFeed" class="activity-feed"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="itemDialog">
+      <form id="itemForm" method="dialog" class="dialog-body">
+        <div class="panel-heading">
+          <div>
+            <h2>Add inventory item</h2>
+            <p>Use the manufacturer barcode or your internal asset code.</p>
+          </div>
+          <button id="closeItemDialogButton" class="icon-button" type="button" title="Close dialog">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <label>
+          Barcode
+          <input id="itemBarcode" required placeholder="SFP-10G-SR" />
+        </label>
+        <label>
+          Item name
+          <input id="itemName" required placeholder="10G SR SFP Module" />
+        </label>
+        <div class="dialog-grid">
+          <label>
+            Category
+            <input id="itemCategory" placeholder="Optics" />
+          </label>
+          <label>
+            Quantity
+            <input id="itemQuantity" min="0" type="number" value="1" />
+          </label>
+        </div>
+        <label>
+          Location
+          <input id="itemLocation" placeholder="Rack A2" />
+        </label>
+        <button class="primary-button" type="submit" value="default">
+          <i data-lucide="save"></i>
+          <span>Save Item</span>
+        </button>
+      </form>
+    </dialog>
+  </body>
+</html>

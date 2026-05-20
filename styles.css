@@ -1,0 +1,532 @@
+:root {
+  color-scheme: light;
+  --ink: #17212b;
+  --muted: #64717f;
+  --line: #d8e0e8;
+  --panel: #ffffff;
+  --page: #eef3f6;
+  --primary: #0f766e;
+  --primary-dark: #0b5d58;
+  --accent: #d97706;
+  --danger: #b42318;
+  --good: #15803d;
+  --shadow: 0 18px 50px rgba(28, 40, 56, 0.11);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.08), transparent 38%),
+    linear-gradient(315deg, rgba(217, 119, 6, 0.08), transparent 36%),
+    var(--page);
+  color: var(--ink);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  background: #15202b;
+  color: #f8fafc;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #f59e0b;
+  color: #111827;
+}
+
+.brand strong,
+.brand span {
+  display: block;
+}
+
+.brand span,
+.sidebar-metrics span {
+  color: #b9c3cf;
+  font-size: 0.82rem;
+}
+
+.nav-tabs {
+  display: grid;
+  gap: 8px;
+}
+
+.nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #dbe5ef;
+  text-align: left;
+}
+
+.nav-tab.active,
+.nav-tab:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.sidebar-metrics {
+  display: grid;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.sidebar-metrics > div {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+}
+
+.sidebar-metrics strong {
+  font-size: 1.3rem;
+}
+
+.workspace {
+  min-width: 0;
+  padding: 28px;
+}
+
+.topbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--primary-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0;
+  font-size: clamp(1.7rem, 3vw, 2.7rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+h2 {
+  margin-bottom: 5px;
+  font-size: 1.08rem;
+}
+
+p {
+  color: var(--muted);
+}
+
+.operator {
+  display: grid;
+  gap: 6px;
+  width: min(260px, 100%);
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  color: #435160;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 0 12px;
+  background: #fff;
+  color: var(--ink);
+}
+
+input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+  outline: none;
+}
+
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
+.work-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.95fr) minmax(320px, 1.05fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.panel {
+  padding: 18px;
+  border: 1px solid rgba(216, 224, 232, 0.9);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.panel-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.panel-heading p {
+  margin-bottom: 0;
+  font-size: 0.92rem;
+}
+
+.primary-button,
+.secondary-button,
+.danger-button,
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  padding: 0 13px;
+  font-weight: 800;
+}
+
+.primary-button {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.primary-button:hover {
+  background: var(--primary-dark);
+}
+
+.secondary-button,
+.icon-button {
+  border-color: var(--line);
+  background: #ffffff;
+  color: var(--ink);
+}
+
+.danger-button {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: var(--danger);
+}
+
+.icon-button {
+  width: 40px;
+  padding: 0;
+}
+
+.box-row,
+.scan-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.box-row label {
+  grid-column: 1 / -1;
+}
+
+.scan-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 270px;
+  margin: 18px 0;
+  overflow: hidden;
+  border: 1px dashed #a9b8c6;
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(15, 118, 110, 0.13) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(15, 118, 110, 0.13) 1px, transparent 1px),
+    #f7fafb;
+  background-size: 30px 30px;
+}
+
+#cameraPreview {
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-on #cameraPreview {
+  display: block;
+}
+
+.scan-target {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  color: var(--primary-dark);
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.scan-target svg {
+  width: 64px;
+  height: 64px;
+}
+
+.camera-on .scan-target {
+  inset: 42px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  color: #ffffff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.36);
+}
+
+.scan-form {
+  display: grid;
+  gap: 9px;
+}
+
+.status-message {
+  min-height: 24px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.status-message.good {
+  color: var(--good);
+}
+
+.status-message.warn {
+  color: var(--accent);
+}
+
+.packed-list,
+.box-list,
+.activity-feed {
+  display: grid;
+  gap: 10px;
+}
+
+.packed-item,
+.box-entry,
+.activity-entry {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.packed-item strong,
+.box-entry strong,
+.activity-entry strong {
+  display: block;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.quantity-pill,
+.state-pill {
+  align-self: start;
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: #e6f4f1;
+  color: var(--primary-dark);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.state-pill.sealed {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.empty-state {
+  place-items: center;
+  min-height: 260px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.empty-state svg {
+  width: 46px;
+  height: 46px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+th,
+td {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+th {
+  color: #526170;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+td {
+  font-weight: 650;
+}
+
+dialog {
+  width: min(520px, calc(100vw - 26px));
+  border: 0;
+  border-radius: 8px;
+  padding: 0;
+  box-shadow: var(--shadow);
+}
+
+dialog::backdrop {
+  background: rgba(20, 30, 42, 0.45);
+}
+
+.dialog-body {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.dialog-grid {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 12px;
+}
+
+svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.2;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    padding: 14px;
+  }
+
+  .nav-tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .nav-tab {
+    justify-content: center;
+  }
+
+  .nav-tab span,
+  .sidebar-metrics {
+    display: none;
+  }
+
+  .topbar,
+  .work-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    display: grid;
+  }
+}
+
+@media (max-width: 560px) {
+  .workspace {
+    padding: 16px;
+  }
+
+  .panel {
+    padding: 14px;
+  }
+
+  .panel-heading,
+  .box-row,
+  .scan-input-row,
+  .dialog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .primary-button,
+  .secondary-button,
+  .danger-button {
+    width: 100%;
+  }
+}
