@@ -1,44 +1,13 @@
-const STORAGE_KEY = "packtrack-demo-state";
+const API_BASE = "/api";
 
-const starterInventory = [
-  {
-    barcode: "SW-C9300-48P",
-    name: "Cisco Catalyst 9300 48P Switch",
-    category: "Switches",
-    quantity: 8,
-    location: "Aisle 1, Rack B",
-  },
-  {
-    barcode: "RTR-ISR4331",
-    name: "Cisco ISR 4331 Router",
-    category: "Routers",
-    quantity: 5,
-    location: "Aisle 1, Rack D",
-  },
-  {
-    barcode: "SFP-10G-SR",
-    name: "10G SR SFP Module",
-    category: "Optics",
-    quantity: 42,
-    location: "Bin O-12",
-  },
-  {
-    barcode: "CAB-CAT6-03",
-    name: "3 ft CAT6 Patch Cable",
-    category: "Cables",
-    quantity: 180,
-    location: "Bin C-03",
-  },
-  {
-    barcode: "PWR-C13-6FT",
-    name: "6 ft C13 Power Cord",
-    category: "Power",
-    quantity: 75,
-    location: "Bin P-02",
-  },
-];
+let state = {
+  inventory: [],
+  boxes: [],
+  activity: [],
+  activeBoxId: "",
+  operator: "",
+};
 
-const state = loadState();
 let cameraStream = null;
 let barcodeDetector = null;
 let scanLoopActive = false;
@@ -60,6 +29,7 @@ const el = {
   boxesList: document.querySelector("#boxesList"),
   activityFeed: document.querySelector("#activityFeed"),
   sealBoxButton: document.querySelector("#sealBoxButton"),
+  shipBoxButton: document.querySelector("#shipBoxButton"),
   exportButton: document.querySelector("#exportButton"),
   addItemButton: document.querySelector("#addItemButton"),
   itemDialog: document.querySelector("#itemDialog"),
@@ -69,26 +39,9 @@ const el = {
   cameraPreview: document.querySelector("#cameraPreview"),
   scanStage: document.querySelector(".scan-stage"),
   resetDemoButton: document.querySelector("#resetDemoButton"),
+  boxQrImage: document.querySelector("#boxQrImage"),
+  boxQrLink: document.querySelector("#boxQrLink"),
 };
-
-function loadState() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    return JSON.parse(saved);
-  }
-
-  return {
-    inventory: starterInventory,
-    boxes: [],
-    activity: [],
-    activeBoxId: "",
-    operator: "",
-  };
-}
-
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
 
 function formatTime(value) {
   return new Intl.DateTimeFormat(undefined, {
@@ -113,114 +66,118 @@ function setStatus(message, tone = "") {
   el.statusMessage.className = `status-message ${tone}`;
 }
 
-function logActivity(type, details) {
-  state.activity.unshift({
-    id: crypto.randomUUID(),
-    type,
-    details,
-    operator: state.operator || "Unassigned",
-    time: new Date().toISOString(),
+async function api(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
   });
+
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(body.error || "Server request failed");
+  }
+  return body;
 }
 
-function createBox(id = el.boxId.value.trim() || makeBoxId()) {
-  const normalized = id.toUpperCase();
-  const existing = state.boxes.find((box) => box.id === normalized);
+async function loadState(activeBoxId = state.activeBoxId) {
+  state = await api("/state");
 
-  if (existing) {
-    state.activeBoxId = normalized;
-    setStatus(`${normalized} reopened.`, "good");
-  } else {
-    state.boxes.unshift({
-      id: normalized,
-      status: "open",
-      createdAt: new Date().toISOString(),
-      sealedAt: "",
-      operator: state.operator || "Unassigned",
-      items: [],
-    });
-    state.activeBoxId = normalized;
-    logActivity("Box created", normalized);
-    setStatus(`${normalized} is ready for scans.`, "good");
+  const requestedBox = new URLSearchParams(window.location.search).get("box");
+  state.activeBoxId = (activeBoxId || requestedBox || state.activeBoxId || "BOX-1001").toUpperCase();
+  el.operatorName.value = state.operator || el.operatorName.value || "";
+  el.boxId.value = state.activeBoxId || makeBoxId();
+  render();
+
+  if (requestedBox) {
+    setStatus(`${state.activeBoxId} loaded from scanned box QR code.`, "good");
   }
+}
 
+async function createBox(id = el.boxId.value.trim() || makeBoxId()) {
+  const normalized = id.toUpperCase();
+  const result = await api("/boxes", {
+    method: "POST",
+    body: JSON.stringify({
+      id: normalized,
+      operator: el.operatorName.value.trim() || "Demo operator",
+    }),
+  });
+
+  state = result;
+  state.activeBoxId = normalized;
   el.boxId.value = normalized;
-  saveAndRender();
+  setStatus(`${normalized} is ready for scans.`, "good");
+  render();
   el.barcodeInput.focus();
 }
 
-function findInventory(barcode) {
-  return state.inventory.find(
-    (item) => item.barcode.toLowerCase() === barcode.toLowerCase(),
-  );
-}
-
-function addScan(barcode) {
+async function addScan(barcode) {
   const code = barcode.trim();
   if (!code) return;
 
-  let box = currentBox();
-  if (!box) {
-    createBox();
-    box = currentBox();
-  }
+  const boxId = (state.activeBoxId || el.boxId.value || "BOX-1001").toUpperCase();
 
-  if (box.status === "sealed") {
-    setStatus(`${box.id} is sealed. Create or reopen another box.`, "warn");
-    return;
-  }
-
-  const item = findInventory(code);
-  if (!item) {
-    setStatus(`${code} is not in inventory. Add it first.`, "warn");
-    el.itemDialog.showModal();
-    document.querySelector("#itemBarcode").value = code;
-    document.querySelector("#itemName").focus();
-    return;
-  }
-
-  if (item.quantity <= 0) {
-    setStatus(`${item.name} is out of stock.`, "warn");
-    return;
-  }
-
-  const packed = box.items.find((entry) => entry.barcode === item.barcode);
-  if (packed) {
-    packed.quantity += 1;
-  } else {
-    box.items.push({
-      barcode: item.barcode,
-      name: item.name,
-      category: item.category,
-      quantity: 1,
+  try {
+    const result = await api("/scan-item", {
+      method: "POST",
+      body: JSON.stringify({
+        boxId,
+        barcode: code,
+        operator: el.operatorName.value.trim() || "Demo operator",
+      }),
     });
-  }
 
-  item.quantity -= 1;
-  logActivity("Item packed", `${item.name} into ${box.id}`);
-  setStatus(`${item.name} added to ${box.id}.`, "good");
-  el.barcodeInput.value = "";
-  saveAndRender();
+    state = result;
+    state.activeBoxId = boxId;
+    el.boxId.value = boxId;
+    el.barcodeInput.value = "";
+    setStatus(`${code} added to ${boxId}. Inventory will update when the box ships.`, "good");
+    render();
+  } catch (error) {
+    setStatus(error.message, "warn");
+    if (error.message.includes("not in inventory")) {
+      el.itemDialog.showModal();
+      document.querySelector("#itemBarcode").value = code;
+      document.querySelector("#itemName").focus();
+    }
+  }
 }
 
-function sealCurrentBox() {
+async function sealCurrentBox() {
   const box = currentBox();
   if (!box) {
     setStatus("Create a box before sealing.", "warn");
     return;
   }
 
-  box.status = "sealed";
-  box.sealedAt = new Date().toISOString();
-  logActivity("Box sealed", box.id);
-  setStatus(`${box.id} sealed.`, "good");
-  saveAndRender();
+  state = await api(`/boxes/${encodeURIComponent(box.id)}/seal`, {
+    method: "POST",
+    body: JSON.stringify({ operator: el.operatorName.value.trim() || "Demo operator" }),
+  });
+  state.activeBoxId = box.id;
+  setStatus(`${box.id} sealed and ready for shipment.`, "good");
+  render();
 }
 
-function saveAndRender() {
-  state.operator = el.operatorName.value.trim();
-  saveState();
-  render();
+async function shipCurrentBox() {
+  const box = currentBox();
+  if (!box) {
+    setStatus("Scan or create a box before shipping.", "warn");
+    return;
+  }
+
+  try {
+    state = await api(`/boxes/${encodeURIComponent(box.id)}/ship`, {
+      method: "POST",
+      body: JSON.stringify({ operator: el.operatorName.value.trim() || "Demo operator" }),
+    });
+    state.activeBoxId = box.id;
+    setStatus(`${box.id} shipped. Server inventory was updated.`, "good");
+    render();
+    switchView("inventory");
+  } catch (error) {
+    setStatus(error.message, "warn");
+  }
 }
 
 function render() {
@@ -229,6 +186,7 @@ function render() {
   renderInventory();
   renderBoxes();
   renderActivity();
+  renderQrPreview();
   if (window.lucide) {
     window.lucide.createIcons();
   }
@@ -244,7 +202,7 @@ function renderMetrics() {
   el.itemsPackedMetric.textContent = String(packedCount);
   el.currentBoxSubtitle.textContent = box
     ? `${box.id} • ${box.status} • ${packedCount} items`
-    : "Create a box to begin.";
+    : "Scan a box QR code or create a box.";
 }
 
 function renderCurrentBox() {
@@ -305,7 +263,7 @@ function renderBoxes() {
             <strong>${escapeHtml(box.id)}</strong>
             <span class="meta">${itemCount} items • ${escapeHtml(box.operator)} • ${formatTime(box.createdAt)}</span>
           </div>
-          <span class="state-pill ${box.status === "sealed" ? "sealed" : ""}">${box.status}</span>
+          <span class="state-pill ${box.status}">${box.status}</span>
         </button>
       `;
     })
@@ -315,7 +273,7 @@ function renderBoxes() {
     button.addEventListener("click", () => {
       state.activeBoxId = button.dataset.boxId;
       el.boxId.value = state.activeBoxId;
-      saveAndRender();
+      render();
       switchView("packing");
     });
   });
@@ -343,6 +301,23 @@ function renderActivity() {
     `,
     )
     .join("");
+}
+
+function renderQrPreview() {
+  const box = currentBox();
+  if (!box) {
+    el.boxQrImage.removeAttribute("src");
+    el.boxQrImage.alt = "";
+    el.boxQrLink.textContent = "Create or select a box";
+    el.boxQrLink.removeAttribute("href");
+    return;
+  }
+
+  const url = `${window.location.origin}${window.location.pathname}?box=${encodeURIComponent(box.id)}`;
+  el.boxQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}`;
+  el.boxQrImage.alt = `QR code for ${box.id}`;
+  el.boxQrLink.href = url;
+  el.boxQrLink.textContent = url;
 }
 
 function switchView(viewId) {
@@ -379,29 +354,33 @@ function exportCsv() {
   URL.revokeObjectURL(url);
 }
 
-function addInventoryItem() {
-  const barcode = document.querySelector("#itemBarcode").value.trim();
-  const existing = findInventory(barcode);
+async function addInventoryItem() {
   const data = {
-    barcode,
+    barcode: document.querySelector("#itemBarcode").value.trim(),
     name: document.querySelector("#itemName").value.trim(),
     category: document.querySelector("#itemCategory").value.trim() || "Uncategorized",
     quantity: Number(document.querySelector("#itemQuantity").value || 0),
     location: document.querySelector("#itemLocation").value.trim() || "Unassigned",
+    operator: el.operatorName.value.trim() || "Demo operator",
   };
 
-  if (existing) {
-    Object.assign(existing, data, { quantity: existing.quantity + data.quantity });
-    logActivity("Inventory updated", data.name);
-  } else {
-    state.inventory.push(data);
-    logActivity("Inventory added", data.name);
-  }
+  state = await api("/items", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 
   el.itemForm.reset();
   el.itemDialog.close();
-  saveAndRender();
   setStatus(`${data.name} is now available to scan.`, "good");
+  render();
+}
+
+async function resetDemo() {
+  state = await api("/reset", { method: "POST" });
+  state.activeBoxId = "BOX-1001";
+  el.boxId.value = state.activeBoxId;
+  setStatus("Demo backend reset to starting data.", "good");
+  render();
 }
 
 async function toggleCamera() {
@@ -447,7 +426,16 @@ async function detectFromCamera() {
   try {
     const detections = await barcodeDetector.detect(el.cameraPreview);
     if (detections.length > 0) {
-      addScan(detections[0].rawValue);
+      const rawValue = detections[0].rawValue;
+      const parsedBox = new URL(rawValue, window.location.origin).searchParams.get("box");
+      if (parsedBox) {
+        state.activeBoxId = parsedBox.toUpperCase();
+        el.boxId.value = state.activeBoxId;
+        setStatus(`${state.activeBoxId} loaded from QR scan.`, "good");
+        render();
+      } else {
+        await addScan(rawValue);
+      }
       await new Promise((resolve) => setTimeout(resolve, 900));
     }
   } catch (error) {
@@ -468,15 +456,13 @@ function escapeHtml(value) {
 }
 
 el.navTabs.forEach((tab) => tab.addEventListener("click", () => switchView(tab.dataset.view)));
-el.operatorName.value = state.operator;
-el.boxId.value = state.activeBoxId || makeBoxId();
-el.operatorName.addEventListener("input", saveAndRender);
 el.newBoxButton.addEventListener("click", () => createBox());
 el.scanForm.addEventListener("submit", (event) => {
   event.preventDefault();
   addScan(el.barcodeInput.value);
 });
 el.sealBoxButton.addEventListener("click", sealCurrentBox);
+el.shipBoxButton.addEventListener("click", shipCurrentBox);
 el.exportButton.addEventListener("click", exportCsv);
 el.addItemButton.addEventListener("click", () => el.itemDialog.showModal());
 el.closeItemDialogButton.addEventListener("click", () => el.itemDialog.close());
@@ -485,9 +471,8 @@ el.itemForm.addEventListener("submit", (event) => {
   addInventoryItem();
 });
 el.cameraButton.addEventListener("click", toggleCamera);
-el.resetDemoButton.addEventListener("click", () => {
-  localStorage.removeItem(STORAGE_KEY);
-  location.reload();
-});
+el.resetDemoButton.addEventListener("click", resetDemo);
 
-render();
+loadState().catch((error) => {
+  setStatus(`${error.message}. Run the demo with npm start.`, "warn");
+});

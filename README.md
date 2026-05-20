@@ -4,10 +4,10 @@ A browser-based demo for scanning networking equipment into boxes and updating i
 
 ## Try It
 
-Run a local server from this folder:
+Run the backend demo server from this folder:
 
 ```bash
-python3 -m http.server 5173
+npm start
 ```
 
 Then open:
@@ -16,11 +16,26 @@ Then open:
 http://localhost:5173
 ```
 
+To show the box QR flow directly:
+
+```text
+http://localhost:5173/?box=BOX-1001
+```
+
+`BOX-1001` is preloaded with demo equipment. Click **Mark Shipped** and the backend subtracts the box contents from inventory.
+
 ## Scanner Support
 
 - USB and Bluetooth barcode scanners work as keyboard input. Click the scan field and scan an item.
 - Manual entry works for testing.
 - Camera scanning uses the browser `BarcodeDetector` API when available.
+
+## How The Company-Style Demo Works
+
+- The browser calls API routes under `/api`.
+- `server.js` reads and writes a local JSON database file named `packtrack-db.json`.
+- Scanning a box QR opens a URL like `http://localhost:5173/?box=BOX-1001`.
+- Clicking **Mark Shipped** calls the backend, and the backend updates inventory counts.
 
 ## Demo Barcodes
 

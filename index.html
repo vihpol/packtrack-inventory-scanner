@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://unpkg.com" />
     <link rel="stylesheet" href="./styles.css" />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
-    <script src="./app.js" defer></script>
+    <script src="./app.js?v=backend-demo" defer></script>
   </head>
   <body>
     <div class="app-shell">
@@ -56,8 +56,8 @@
       <main class="workspace">
         <header class="topbar">
           <div>
-            <p class="eyebrow">Live inventory scanner</p>
-            <h1>Pack boxes, scan assets, update stock.</h1>
+            <p class="eyebrow">Backend inventory demo</p>
+            <h1>Scan a box QR, update server inventory.</h1>
           </div>
           <div class="operator">
             <label for="operatorName">Operator</label>
@@ -71,7 +71,7 @@
               <div class="panel-heading">
                 <div>
                   <h2 id="packingTitle">Packing station</h2>
-                  <p>Scan by camera, USB scanner, or manual barcode entry.</p>
+                  <p>Open a box QR link, scan item barcodes, then ship the box.</p>
                 </div>
                 <button id="cameraButton" class="icon-button" type="button" title="Toggle camera scanner">
                   <i data-lucide="camera"></i>
@@ -115,14 +115,34 @@
                   <h2>Current box</h2>
                   <p id="currentBoxSubtitle">Create a box to begin.</p>
                 </div>
-                <button id="sealBoxButton" class="secondary-button" type="button">
-                  <i data-lucide="lock"></i>
-                  <span>Seal</span>
-                </button>
+                <div class="button-cluster">
+                  <button id="sealBoxButton" class="secondary-button" type="button">
+                    <i data-lucide="lock"></i>
+                    <span>Seal</span>
+                  </button>
+                  <button id="shipBoxButton" class="primary-button" type="button">
+                    <i data-lucide="truck"></i>
+                    <span>Mark Shipped</span>
+                  </button>
+                </div>
               </div>
               <div id="currentBoxList" class="packed-list empty-state">
                 <i data-lucide="package-open"></i>
                 <span>No items packed yet.</span>
+              </div>
+            </section>
+
+            <section class="panel qr-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Box QR demo</h2>
+                  <p>Print or scan this link to reopen the active box.</p>
+                </div>
+                <i data-lucide="qr-code"></i>
+              </div>
+              <div class="qr-wrap">
+                <img id="boxQrImage" alt="" />
+                <a id="boxQrLink" href="#">Create or select a box</a>
               </div>
             </section>
           </div>
@@ -133,7 +153,7 @@
             <div class="panel-heading">
               <div>
                 <h2 id="inventoryTitle">Inventory</h2>
-                <p>Starting quantities reduce automatically as boxes are packed.</p>
+                <p>Quantities update when the backend marks a scanned box as shipped.</p>
               </div>
               <button id="addItemButton" class="primary-button" type="button">
                 <i data-lucide="plus"></i>
