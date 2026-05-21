@@ -3,6 +3,10 @@ const el = {
   scanInput: document.querySelector("#scanInput"),
   status: document.querySelector("#status"),
   inventoryBody: document.querySelector("#inventoryBody"),
+  inventoryCount: document.querySelector("#inventoryCount"),
+  scannerPanel: document.querySelector("#scannerPanel"),
+  inventoryPanel: document.querySelector("#inventoryPanel"),
+  lastScanPanel: document.querySelector("#lastScanPanel"),
   resetButton: document.querySelector("#resetButton"),
   scanLog: document.querySelector("#scanLog"),
   cameraButton: document.querySelector("#cameraButton"),
@@ -38,7 +42,17 @@ function setStatus(message, tone = "") {
   el.status.className = `status ${tone}`;
 }
 
+function flash(element, className) {
+  element.classList.remove(className);
+  window.requestAnimationFrame(() => {
+    element.classList.add(className);
+    window.setTimeout(() => element.classList.remove(className), 900);
+  });
+}
+
 function renderInventory(items) {
+  el.inventoryCount.textContent = `${items.length} ${items.length === 1 ? "product" : "products"} loaded`;
+
   if (items.length === 0) {
     el.inventoryBody.innerHTML = `
       <tr>
@@ -92,10 +106,14 @@ async function scanProduct(value) {
     renderInventory(result.inventory);
     renderLog(result.activity);
     setStatus(`${barcode} updated inventory immediately.`, "ok");
+    flash(el.scannerPanel, "scan-success");
+    flash(el.inventoryPanel, "inventory-updated");
+    flash(el.lastScanPanel, "scan-success");
     el.scanInput.value = "";
     el.scanInput.focus();
   } catch (error) {
     setStatus(error.message, "warn");
+    flash(el.scannerPanel, "scan-warning");
   }
 }
 

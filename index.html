@@ -15,10 +15,18 @@
           This demo shows how a real product barcode scanner can update digital inventory automatically.
           Scan a product's barcode and the backend immediately reduces the available count.
         </p>
+        <div class="status-strip" aria-label="System status">
+          <div>
+            <span class="status-dot"></span>
+            Scanner ready
+          </div>
+          <div>Inventory sync enabled</div>
+          <div id="inventoryCount">0 products loaded</div>
+        </div>
       </section>
 
       <section class="flow">
-        <article class="panel">
+        <article id="scannerPanel" class="panel scanner-panel">
           <div class="card-heading">
             <div>
               <h2>1. Scan product barcode</h2>
@@ -29,7 +37,10 @@
 
           <div class="camera-frame">
             <video id="cameraPreview" playsinline muted></video>
-            <div id="cameraPlaceholder">Scan product barcode</div>
+            <div id="cameraPlaceholder">
+              <span class="scan-beam"></span>
+              <strong>Scan product barcode</strong>
+            </div>
           </div>
 
           <form id="scanForm">
@@ -40,10 +51,10 @@
             </div>
           </form>
 
-          <div id="status" class="status">Ready.</div>
+          <div id="status" class="status">Ready for a scan.</div>
         </article>
 
-        <article class="panel">
+        <article id="inventoryPanel" class="panel inventory-panel">
           <div class="card-heading">
             <div>
               <h2>2. Inventory</h2>
@@ -63,7 +74,7 @@
           </table>
         </article>
 
-        <article class="panel">
+        <article id="lastScanPanel" class="panel last-scan-panel">
           <h2>Last scan</h2>
           <div id="scanLog">No product scanned yet.</div>
         </article>
