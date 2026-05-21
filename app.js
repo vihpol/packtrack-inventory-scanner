@@ -1,9 +1,11 @@
 const el = {
   scanForm: document.querySelector("#scanForm"),
   scanInput: document.querySelector("#scanInput"),
+  scanButton: document.querySelector("#scanButton"),
   status: document.querySelector("#status"),
   inventoryBody: document.querySelector("#inventoryBody"),
   inventoryCount: document.querySelector("#inventoryCount"),
+  syncStatus: document.querySelector("#syncStatus"),
   scannerPanel: document.querySelector("#scannerPanel"),
   inventoryPanel: document.querySelector("#inventoryPanel"),
   lastScanPanel: document.querySelector("#lastScanPanel"),
@@ -17,19 +19,51 @@ const el = {
 let previousInventory = new Map();
 let scannerBuffer = "";
 let scannerTimer = null;
+let inputScanTimer = null;
+let scanInFlight = false;
+let lastSubmittedBarcode = "";
+let lastSubmittedAt = 0;
 let cameraStream = null;
 let detector = null;
 let cameraActive = false;
 
 function normalizeScan(value) {
-  return String(value || "").trim().toUpperCase();
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  try {
+    const url = new URL(raw, window.location.origin);
+    const fromUrl =
+      url.searchParams.get("barcode") ||
+      url.searchParams.get("sku") ||
+      url.searchParams.get("upc") ||
+      url.searchParams.get("code") ||
+      url.searchParams.get("product");
+    if (fromUrl) return fromUrl.trim().toUpperCase();
+  } catch (error) {
+    // Not a URL; treat it as a normal scanned barcode.
+  }
+
+  return raw.replace(/[\r\n\t]/g, "").toUpperCase();
 }
 
 async function api(path, options = {}) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 6000);
+
   const response = await fetch(path, {
     headers: { "Content-Type": "application/json" },
+    signal: controller.signal,
     ...options,
+  }).catch((error) => {
+    if (error.name === "AbortError") {
+      throw new Error("Inventory server did not respond. Check the network or backend.");
+    }
+    throw new Error("Inventory server is unreachable.");
   });
+
+  window.clearTimeout(timeout);
+
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(body.error || "Request failed");
@@ -86,16 +120,37 @@ function renderLog(activity) {
 }
 
 async function loadState() {
-  const data = await api("/api/state");
-  renderInventory(data.inventory);
-  renderLog(data.activity);
+  try {
+    const data = await api("/api/state");
+    renderInventory(data.inventory);
+    renderLog(data.activity);
+    el.syncStatus.textContent = "Inventory sync online";
+  } catch (error) {
+    el.syncStatus.textContent = "Inventory sync offline";
+    throw error;
+  }
 }
 
 async function scanProduct(value) {
   const barcode = normalizeScan(value);
   if (!barcode) return;
+  if (scanInFlight) return;
+
+  const now = Date.now();
+  if (barcode === lastSubmittedBarcode && now - lastSubmittedAt < 1800) {
+    setStatus(`${barcode} was just scanned. Duplicate ignored.`, "warn");
+    flash(el.scannerPanel, "scan-warning");
+    el.scanInput.value = "";
+    el.scanInput.focus();
+    return;
+  }
 
   setStatus(`Scanned ${barcode}. Updating inventory...`);
+  scanInFlight = true;
+  lastSubmittedBarcode = barcode;
+  lastSubmittedAt = now;
+  el.scanButton.disabled = true;
+  el.scanInput.disabled = true;
 
   try {
     const result = await api("/api/scan-product", {
@@ -114,6 +169,11 @@ async function scanProduct(value) {
   } catch (error) {
     setStatus(error.message, "warn");
     flash(el.scannerPanel, "scan-warning");
+  } finally {
+    scanInFlight = false;
+    el.scanButton.disabled = false;
+    el.scanInput.disabled = false;
+    el.scanInput.focus();
   }
 }
 
@@ -141,6 +201,16 @@ function handleScannerKey(event) {
   scannerTimer = setTimeout(() => {
     scannerBuffer = "";
   }, 250);
+}
+
+function scheduleInputScan() {
+  window.clearTimeout(inputScanTimer);
+  const barcode = normalizeScan(el.scanInput.value);
+  if (barcode.length < 4) return;
+
+  inputScanTimer = window.setTimeout(() => {
+    scanProduct(el.scanInput.value);
+  }, 450);
 }
 
 async function toggleCamera() {
@@ -205,8 +275,10 @@ function escapeHtml(value) {
 
 el.scanForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  window.clearTimeout(inputScanTimer);
   scanProduct(el.scanInput.value);
 });
+el.scanInput.addEventListener("input", scheduleInputScan);
 el.resetButton.addEventListener("click", resetDemo);
 el.cameraButton.addEventListener("click", toggleCamera);
 document.addEventListener("keydown", handleScannerKey);

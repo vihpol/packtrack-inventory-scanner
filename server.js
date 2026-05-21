@@ -6,6 +6,8 @@ const crypto = require("crypto");
 const PORT = Number(process.env.PORT || 5173);
 const ROOT = __dirname;
 const DB_PATH = path.join(ROOT, "packtrack-db.json");
+const DUPLICATE_SCAN_WINDOW_MS = 1800;
+let mutationQueue = Promise.resolve();
 
 function newId() {
   return crypto.randomBytes(16).toString("hex");
@@ -67,13 +69,33 @@ function readBody(req) {
 }
 
 function normalizeBarcode(value) {
-  return String(value || "").trim().toUpperCase();
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  try {
+    const url = new URL(raw, "http://scanner.local");
+    const fromUrl =
+      url.searchParams.get("barcode") ||
+      url.searchParams.get("sku") ||
+      url.searchParams.get("upc") ||
+      url.searchParams.get("code") ||
+      url.searchParams.get("product");
+    if (fromUrl) return fromUrl.trim().toUpperCase();
+  } catch (error) {
+    // Not a URL; treat it as a normal scanned barcode.
+  }
+
+  return raw.replace(/[\r\n\t]/g, "").toUpperCase();
 }
 
 function findInventory(data, barcode) {
-  return data.inventory.find(
-    (item) => item.barcode.toLowerCase() === String(barcode).toLowerCase(),
-  );
+  const normalized = normalizeBarcode(barcode).toLowerCase();
+  return data.inventory.find((item) => {
+    const aliases = Array.isArray(item.aliases) ? item.aliases : [];
+    return [item.barcode].concat(aliases).some((code) => {
+      return normalizeBarcode(code).toLowerCase() === normalized;
+    });
+  });
 }
 
 function scanProduct(data, barcode) {
@@ -81,13 +103,38 @@ function scanProduct(data, barcode) {
   const item = findInventory(data, normalized);
 
   if (!item) {
+    data.activity.unshift({
+      id: newId(),
+      type: "Rejected scan",
+      details: `${normalized || "Product"} is not registered`,
+      time: now(),
+    });
     throw new Error(`${normalized || "Product"} was not found in inventory`);
   }
   if (item.quantity <= 0) {
+    data.activity.unshift({
+      id: newId(),
+      type: "Rejected scan",
+      details: `${item.name} is out of stock`,
+      time: now(),
+    });
     throw new Error(`${item.name} is out of stock`);
   }
 
+  data.recentScans = data.recentScans || {};
+  const lastScanAt = data.recentScans[item.barcode] || 0;
+  if (Date.now() - lastScanAt < DUPLICATE_SCAN_WINDOW_MS) {
+    data.activity.unshift({
+      id: newId(),
+      type: "Duplicate ignored",
+      details: `${item.name} was just scanned`,
+      time: now(),
+    });
+    throw new Error(`${item.name} was just scanned. Duplicate ignored.`);
+  }
+
   item.quantity -= 1;
+  data.recentScans[item.barcode] = Date.now();
   data.activity.unshift({
     id: newId(),
     type: "Product scanned",
@@ -100,6 +147,9 @@ function addProduct(data, product) {
   const barcode = normalizeBarcode(product.barcode);
   const name = String(product.name || "").trim();
   const quantity = Number(product.quantity || 0);
+  const aliases = Array.isArray(product.aliases)
+    ? product.aliases.map(normalizeBarcode).filter(Boolean)
+    : [];
 
   if (!barcode || !name) {
     throw new Error("Product barcode and name are required");
@@ -112,8 +162,9 @@ function addProduct(data, product) {
   if (existing) {
     existing.name = name;
     existing.quantity = quantity;
+    existing.aliases = aliases;
   } else {
-    data.inventory.push({ barcode, name, quantity });
+    data.inventory.push({ barcode, name, quantity, aliases });
   }
 
   data.activity.unshift({
@@ -124,48 +175,64 @@ function addProduct(data, product) {
   });
 }
 
+function runMutation(task) {
+  const next = mutationQueue.then(task, task);
+  mutationQueue = next.catch(() => {});
+  return next;
+}
+
 async function handleApi(req, res, url) {
+  if (req.method === "GET" && url.pathname === "/api/health") {
+    sendJson(res, 200, { ok: true, time: now() });
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/state") {
     sendJson(res, 200, readDb());
     return;
   }
 
   if (req.method === "POST" && url.pathname === "/api/reset") {
-    const fresh = starterData();
-    writeDb(fresh);
+    const fresh = await runMutation(() => {
+      const nextData = starterData();
+      writeDb(nextData);
+      return nextData;
+    });
     sendJson(res, 200, fresh);
     return;
   }
 
   if (req.method === "POST" && url.pathname === "/api/scan-product") {
-    const data = readDb();
     const body = await readBody(req);
 
     try {
-      scanProduct(data, body.barcode);
+      const data = await runMutation(() => {
+        const nextData = readDb();
+        scanProduct(nextData, body.barcode);
+        writeDb(nextData);
+        return nextData;
+      });
+      sendJson(res, 200, data);
     } catch (error) {
-      sendError(res, 400, error.message);
-      return;
+      sendError(res, error.message.includes("Duplicate ignored") ? 409 : 400, error.message);
     }
-
-    writeDb(data);
-    sendJson(res, 200, data);
     return;
   }
 
   if (req.method === "POST" && url.pathname === "/api/products") {
-    const data = readDb();
     const body = await readBody(req);
 
     try {
-      addProduct(data, body);
+      const data = await runMutation(() => {
+        const nextData = readDb();
+        addProduct(nextData, body);
+        writeDb(nextData);
+        return nextData;
+      });
+      sendJson(res, 200, data);
     } catch (error) {
       sendError(res, 400, error.message);
-      return;
     }
-
-    writeDb(data);
-    sendJson(res, 200, data);
     return;
   }
 

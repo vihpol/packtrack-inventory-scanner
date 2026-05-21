@@ -20,7 +20,7 @@
             <span class="status-dot"></span>
             Scanner ready
           </div>
-          <div>Inventory sync enabled</div>
+          <div id="syncStatus">Checking inventory sync</div>
           <div id="inventoryCount">0 products loaded</div>
         </div>
       </section>
@@ -47,7 +47,7 @@
             <label for="scanInput">Product barcode or QR value</label>
             <div class="scan-row">
               <input id="scanInput" autocomplete="off" placeholder="Scan real product barcode" />
-              <button type="submit">Scan</button>
+              <button id="scanButton" type="submit">Scan</button>
             </div>
           </form>
 
