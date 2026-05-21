@@ -19,10 +19,9 @@ http://localhost:5173
 ## Demo Flow
 
 1. Open the app.
-2. Add a real product barcode from the product label.
-3. Scan that same product barcode with a USB/Bluetooth scanner, camera scanner, or the manual Scan button.
-4. The browser sends `POST /api/scan-product` to the backend.
-5. The backend subtracts 1 from that product's inventory.
+2. Scan a registered product barcode with a USB/Bluetooth scanner, camera scanner, or the manual Scan button.
+3. The browser sends `POST /api/scan-product` to the backend.
+4. The backend subtracts 1 from that product's inventory.
 5. The inventory table updates immediately.
 
 ## Scanner Support

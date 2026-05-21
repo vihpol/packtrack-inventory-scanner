@@ -1,10 +1,6 @@
 const el = {
   scanForm: document.querySelector("#scanForm"),
   scanInput: document.querySelector("#scanInput"),
-  productForm: document.querySelector("#productForm"),
-  productBarcode: document.querySelector("#productBarcode"),
-  productName: document.querySelector("#productName"),
-  productQuantity: document.querySelector("#productQuantity"),
   status: document.querySelector("#status"),
   inventoryBody: document.querySelector("#inventoryBody"),
   resetButton: document.querySelector("#resetButton"),
@@ -46,7 +42,7 @@ function renderInventory(items) {
   if (items.length === 0) {
     el.inventoryBody.innerHTML = `
       <tr>
-        <td colspan="3">No products added yet.</td>
+        <td colspan="3">No registered products loaded yet.</td>
       </tr>
     `;
     previousInventory = new Map();
@@ -103,37 +99,14 @@ async function scanProduct(value) {
   }
 }
 
-async function addProduct() {
-  const barcode = normalizeScan(el.productBarcode.value);
-  const name = el.productName.value.trim();
-  const quantity = Number(el.productQuantity.value || 0);
-
-  try {
-    const result = await api("/api/products", {
-      method: "POST",
-      body: JSON.stringify({ barcode, name, quantity }),
-    });
-
-    renderInventory(result.inventory);
-    renderLog(result.activity);
-    setStatus(`${name} added. Scan ${barcode} to update inventory.`, "ok");
-    el.productForm.reset();
-    el.productQuantity.value = "10";
-    el.scanInput.value = "";
-    el.scanInput.focus();
-  } catch (error) {
-    setStatus(error.message, "warn");
-  }
-}
-
 async function resetDemo() {
   const data = await api("/api/reset", { method: "POST" });
   previousInventory = new Map();
   renderInventory(data.inventory);
   renderLog(data.activity);
   el.scanInput.value = "";
-  setStatus("Demo reset. Add a real product barcode.", "ok");
-  el.productBarcode.focus();
+  setStatus("Demo reset.", "ok");
+  el.scanInput.focus();
 }
 
 function handleScannerKey(event) {
@@ -216,14 +189,10 @@ el.scanForm.addEventListener("submit", (event) => {
   event.preventDefault();
   scanProduct(el.scanInput.value);
 });
-el.productForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  addProduct();
-});
 el.resetButton.addEventListener("click", resetDemo);
 el.cameraButton.addEventListener("click", toggleCamera);
 document.addEventListener("keydown", handleScannerKey);
 
 loadState()
-  .then(() => el.productBarcode.focus())
+  .then(() => el.scanInput.focus())
   .catch((error) => setStatus(error.message, "warn"));

@@ -22,7 +22,7 @@ function starterData() {
       {
         id: newId(),
         type: "Demo ready",
-        details: "Add a real product, then scan its barcode",
+        details: "Ready for registered product scans",
         time: now(),
       },
     ],
