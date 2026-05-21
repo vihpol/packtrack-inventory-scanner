@@ -1,6 +1,6 @@
-# PackTrack Inventory Scanner
+# Box Scan Inventory Demo
 
-A browser-based demo for scanning networking equipment into boxes and updating inventory automatically.
+A minimal demo where scanning one box barcode/QR code immediately updates inventory through a REST API.
 
 ## Try It
 
@@ -16,31 +16,30 @@ Then open:
 http://localhost:5173
 ```
 
-To show the box QR flow directly:
+## Demo Flow
 
-```text
-http://localhost:5173/?box=BOX-1001
-```
-
-`BOX-1001` is preloaded with demo equipment. Click **Mark Shipped** and the backend subtracts the box contents from inventory.
+1. Open the app.
+2. Scan `BOX-1001` with a USB/Bluetooth scanner, camera scanner, or the manual Scan button.
+3. The browser sends `POST /api/scan-box` to the backend.
+4. The backend subtracts the items inside `BOX-1001` from inventory.
+5. The inventory table updates immediately.
 
 ## Scanner Support
 
-- USB and Bluetooth barcode scanners work as keyboard input. Click the scan field and scan an item.
+- USB and Bluetooth barcode scanners work as keyboard input. Click the scan field and scan the box.
 - Manual entry works for testing.
 - Camera scanning uses the browser `BarcodeDetector` API when available.
 
-## How The Company-Style Demo Works
+## REST API
 
-- The browser calls API routes under `/api`.
-- `server.js` reads and writes a local JSON database file named `packtrack-db.json`.
-- Scanning a box QR opens a URL like `http://localhost:5173/?box=BOX-1001`.
-- Clicking **Mark Shipped** calls the backend, and the backend updates inventory counts.
+```bash
+curl -X POST http://localhost:5173/api/scan-box \
+  -H 'Content-Type: application/json' \
+  -d '{"boxId":"BOX-1001"}'
+```
 
-## Demo Barcodes
+Reset the demo:
 
-- `SW-C9300-48P`
-- `RTR-ISR4331`
-- `SFP-10G-SR`
-- `CAB-CAT6-03`
-- `PWR-C13-6FT`
+```bash
+curl -X POST http://localhost:5173/api/reset
+```
