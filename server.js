@@ -1,11 +1,19 @@
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
-const { randomUUID } = require("node:crypto");
+const crypto = require("node:crypto");
 
 const PORT = Number(process.env.PORT || 5173);
 const ROOT = __dirname;
 const DB_PATH = path.join(ROOT, "packtrack-db.json");
+
+function newId() {
+  if (crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  return crypto.randomBytes(16).toString("hex");
+}
 
 const starterData = {
   inventory: [
@@ -77,7 +85,7 @@ const starterData = {
   ],
   activity: [
     {
-      id: randomUUID(),
+      id: newId(),
       type: "Demo box staged",
       details: "BOX-1001 is ready to scan and ship",
       operator: "System",
@@ -134,7 +142,7 @@ function readBody(req) {
 
 function logActivity(data, type, details, operator) {
   data.activity.unshift({
-    id: randomUUID(),
+    id: newId(),
     type,
     details,
     operator: operator || "Unassigned",
@@ -185,7 +193,7 @@ async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/reset") {
     const fresh = clone(starterData);
-    fresh.activity[0].id = randomUUID();
+    fresh.activity[0].id = newId();
     fresh.activity[0].time = new Date().toISOString();
     fresh.boxes[0].createdAt = new Date().toISOString();
     fresh.boxes[0].sealedAt = new Date().toISOString();
