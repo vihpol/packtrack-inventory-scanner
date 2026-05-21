@@ -12,12 +12,36 @@
       <section class="hero">
         <p class="eyebrow">REST API demo</p>
         <h1>Scan a product. Inventory updates.</h1>
+        <p class="intro">
+          This demo shows how a real product barcode scanner can update digital inventory automatically.
+          Add a product once, scan that product's barcode, and the backend immediately reduces the available count.
+        </p>
       </section>
 
-      <section class="demo-grid">
-        <article class="scanner-card">
+      <section class="flow">
+        <article class="panel">
+          <h2>1. Add a real product</h2>
+          <p>Use the barcode already printed on the product label.</p>
+          <form id="productForm">
+            <label for="productBarcode">Product barcode</label>
+            <input id="productBarcode" autocomplete="off" placeholder="Scan or type barcode" required />
+
+            <label for="productName">Product name</label>
+            <input id="productName" placeholder="Product name" required />
+
+            <label for="productQuantity">Starting quantity</label>
+            <input id="productQuantity" min="0" type="number" value="10" required />
+
+            <button type="submit">Add Product</button>
+          </form>
+        </article>
+
+        <article class="panel">
           <div class="card-heading">
-            <h2>Scanner</h2>
+            <div>
+              <h2>2. Scan product barcode</h2>
+              <p>A USB or Bluetooth scanner acts like a keyboard. Scan, then inventory updates.</p>
+            </div>
             <button id="cameraButton" type="button">Camera</button>
           </div>
 
@@ -37,46 +61,30 @@
           <div id="status" class="status">Ready.</div>
         </article>
 
-        <article class="scanner-card">
-          <h2>Add real product</h2>
-          <form id="productForm">
-            <label for="productBarcode">Barcode from product label</label>
-            <input id="productBarcode" autocomplete="off" placeholder="Scan or type barcode" required />
-
-            <label for="productName">Product name</label>
-            <input id="productName" placeholder="Product name" required />
-
-            <label for="productQuantity">Starting quantity</label>
-            <input id="productQuantity" min="0" type="number" value="10" required />
-
-            <button type="submit">Add Product</button>
-          </form>
-        </article>
-      </section>
-
-      <section class="inventory-card">
-        <div class="card-heading">
-          <div>
-            <h2>Inventory</h2>
-            <p>Scan a registered product barcode and the count changes immediately.</p>
+        <article class="panel">
+          <div class="card-heading">
+            <div>
+              <h2>3. Inventory</h2>
+              <p>Scan a registered product barcode and this count changes immediately.</p>
+            </div>
+            <button id="resetButton" type="button">Reset Demo</button>
           </div>
-          <button id="resetButton" type="button">Reset Demo</button>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Barcode</th>
-              <th>Available</th>
-            </tr>
-          </thead>
-          <tbody id="inventoryBody"></tbody>
-        </table>
-      </section>
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Barcode</th>
+                <th>Available</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryBody"></tbody>
+          </table>
+        </article>
 
-      <section class="log-card">
-        <h2>Last scan</h2>
-        <div id="scanLog">No product scanned yet.</div>
+        <article class="panel">
+          <h2>Last scan</h2>
+          <div id="scanLog">No product scanned yet.</div>
+        </article>
       </section>
     </main>
   </body>

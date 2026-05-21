@@ -46,7 +46,7 @@ button:hover {
 }
 
 .page {
-  width: min(1080px, calc(100% - 32px));
+  width: min(860px, calc(100% - 32px));
   margin: 0 auto;
   padding: 36px 0;
 }
@@ -70,8 +70,8 @@ p {
 }
 
 h1 {
-  margin-bottom: 0;
-  font-size: clamp(2rem, 5vw, 4rem);
+  margin-bottom: 14px;
+  font-size: clamp(2rem, 5vw, 3.5rem);
   line-height: 1;
   letter-spacing: 0;
 }
@@ -85,17 +85,19 @@ p {
   color: var(--muted);
 }
 
-.demo-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
-  gap: 16px;
-  margin-bottom: 16px;
+.intro {
+  max-width: 760px;
+  margin-bottom: 0;
+  font-size: 1.05rem;
+  line-height: 1.55;
 }
 
-.scanner-card,
-.qr-card,
-.inventory-card,
-.log-card {
+.flow {
+  display: grid;
+  gap: 16px;
+}
+
+.panel {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -209,40 +211,6 @@ input:focus {
   color: var(--warn);
 }
 
-.qr-card {
-  display: grid;
-  justify-items: center;
-  align-content: start;
-  text-align: center;
-}
-
-.qr-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  width: 100%;
-}
-
-.qr-tile {
-  display: grid;
-  gap: 8px;
-  justify-items: center;
-}
-
-.qr-tile img {
-  width: 150px;
-  height: 150px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
-}
-
-.qr-tile p {
-  margin: 0;
-  color: var(--ink);
-  font-weight: 900;
-}
-
 table {
   width: 100%;
   border-collapse: collapse;
@@ -269,23 +237,14 @@ td {
   color: var(--ok);
 }
 
-.log-card {
-  margin-top: 16px;
-}
-
 #scanLog {
   color: var(--muted);
   font-weight: 750;
 }
 
 @media (max-width: 760px) {
-  .demo-grid {
-    grid-template-columns: 1fr;
-  }
-
   .card-heading,
-  .scan-row,
-  .qr-list {
+  .scan-row {
     grid-template-columns: 1fr;
   }
 
