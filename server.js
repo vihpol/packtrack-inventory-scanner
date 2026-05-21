@@ -54,6 +54,15 @@ function starterData() {
           { barcode: "CAB-CAT6-03", quantity: 10 },
         ],
       },
+      {
+        id: "BOX-1002",
+        status: "ready",
+        items: [
+          { barcode: "RTR-ISR4331", quantity: 1 },
+          { barcode: "SFP-10G-SR", quantity: 2 },
+          { barcode: "PWR-C13-6FT", quantity: 2 },
+        ],
+      },
     ],
     activity: [
       {

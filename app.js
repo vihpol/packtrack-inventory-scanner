@@ -1,4 +1,4 @@
-const DEMO_BOX = "BOX-1001";
+const DEMO_BOXES = ["BOX-1001", "BOX-1002"];
 
 const el = {
   scanForm: document.querySelector("#scanForm"),
@@ -7,7 +7,7 @@ const el = {
   inventoryBody: document.querySelector("#inventoryBody"),
   resetButton: document.querySelector("#resetButton"),
   scanLog: document.querySelector("#scanLog"),
-  qrImage: document.querySelector("#qrImage"),
+  qrList: document.querySelector("#qrList"),
   cameraButton: document.querySelector("#cameraButton"),
   cameraPreview: document.querySelector("#cameraPreview"),
   cameraFrame: document.querySelector(".camera-frame"),
@@ -107,8 +107,8 @@ async function resetDemo() {
   previousInventory = new Map();
   renderInventory(data.inventory);
   renderLog([]);
-  el.scanInput.value = DEMO_BOX;
-  setStatus("Demo reset. Scan BOX-1001 again.", "ok");
+  el.scanInput.value = DEMO_BOXES[0];
+  setStatus("Demo reset. Scan BOX-1001 or BOX-1002.", "ok");
 }
 
 async function toggleCamera() {
@@ -171,7 +171,14 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-el.qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(DEMO_BOX)}`;
+el.qrList.innerHTML = DEMO_BOXES.map(
+  (boxId) => `
+    <div class="qr-tile">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(boxId)}" alt="QR code for ${boxId}" />
+      <p>${boxId}</p>
+    </div>
+  `,
+).join("");
 el.scanForm.addEventListener("submit", (event) => {
   event.preventDefault();
   scanBox(el.scanInput.value);

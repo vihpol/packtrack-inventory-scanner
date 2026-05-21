@@ -216,16 +216,29 @@ input:focus {
   text-align: center;
 }
 
-.qr-card img {
-  width: 210px;
-  height: 210px;
+.qr-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.qr-tile {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.qr-tile img {
+  width: 150px;
+  height: 150px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
 }
 
-#qrText {
-  margin: 12px 0 0;
+.qr-tile p {
+  margin: 0;
   color: var(--ink);
   font-weight: 900;
 }
@@ -271,7 +284,8 @@ td {
   }
 
   .card-heading,
-  .scan-row {
+  .scan-row,
+  .qr-list {
     grid-template-columns: 1fr;
   }
 

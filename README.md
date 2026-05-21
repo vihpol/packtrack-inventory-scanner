@@ -19,7 +19,7 @@ http://localhost:5173
 ## Demo Flow
 
 1. Open the app.
-2. Scan `BOX-1001` with a USB/Bluetooth scanner, camera scanner, or the manual Scan button.
+2. Scan `BOX-1001` or `BOX-1002` with a USB/Bluetooth scanner, camera scanner, or the manual Scan button.
 3. The browser sends `POST /api/scan-box` to the backend.
 4. The backend subtracts the items inside `BOX-1001` from inventory.
 5. The inventory table updates immediately.
