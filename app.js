@@ -1,19 +1,14 @@
-const DEMO_PRODUCTS = [
-  "SW-C9300-48P",
-  "RTR-ISR4331",
-  "SFP-10G-SR",
-  "CAB-CAT6-03",
-  "PWR-C13-6FT",
-];
-
 const el = {
   scanForm: document.querySelector("#scanForm"),
   scanInput: document.querySelector("#scanInput"),
+  productForm: document.querySelector("#productForm"),
+  productBarcode: document.querySelector("#productBarcode"),
+  productName: document.querySelector("#productName"),
+  productQuantity: document.querySelector("#productQuantity"),
   status: document.querySelector("#status"),
   inventoryBody: document.querySelector("#inventoryBody"),
   resetButton: document.querySelector("#resetButton"),
   scanLog: document.querySelector("#scanLog"),
-  productQrList: document.querySelector("#productQrList"),
   cameraButton: document.querySelector("#cameraButton"),
   cameraPreview: document.querySelector("#cameraPreview"),
   cameraFrame: document.querySelector(".camera-frame"),
@@ -48,6 +43,16 @@ function setStatus(message, tone = "") {
 }
 
 function renderInventory(items) {
+  if (items.length === 0) {
+    el.inventoryBody.innerHTML = `
+      <tr>
+        <td colspan="3">No products added yet.</td>
+      </tr>
+    `;
+    previousInventory = new Map();
+    return;
+  }
+
   el.inventoryBody.innerHTML = items
     .map((item) => {
       const previous = previousInventory.get(item.barcode);
@@ -92,6 +97,30 @@ async function scanProduct(value) {
     renderLog(result.activity);
     setStatus(`${barcode} updated inventory immediately.`, "ok");
     el.scanInput.value = "";
+    el.scanInput.focus();
+  } catch (error) {
+    setStatus(error.message, "warn");
+  }
+}
+
+async function addProduct() {
+  const barcode = normalizeScan(el.productBarcode.value);
+  const name = el.productName.value.trim();
+  const quantity = Number(el.productQuantity.value || 0);
+
+  try {
+    const result = await api("/api/products", {
+      method: "POST",
+      body: JSON.stringify({ barcode, name, quantity }),
+    });
+
+    renderInventory(result.inventory);
+    renderLog(result.activity);
+    setStatus(`${name} added. Scan ${barcode} to update inventory.`, "ok");
+    el.productForm.reset();
+    el.productQuantity.value = "10";
+    el.scanInput.value = "";
+    el.scanInput.focus();
   } catch (error) {
     setStatus(error.message, "warn");
   }
@@ -103,7 +132,8 @@ async function resetDemo() {
   renderInventory(data.inventory);
   renderLog(data.activity);
   el.scanInput.value = "";
-  setStatus("Demo reset. Scan a product barcode.", "ok");
+  setStatus("Demo reset. Add a real product barcode.", "ok");
+  el.productBarcode.focus();
 }
 
 function handleScannerKey(event) {
@@ -182,21 +212,18 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-el.productQrList.innerHTML = DEMO_PRODUCTS.map(
-  (barcode) => `
-    <div class="qr-tile">
-      <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(barcode)}" alt="QR code for ${barcode}" />
-      <p>${barcode}</p>
-    </div>
-  `,
-).join("");
-
 el.scanForm.addEventListener("submit", (event) => {
   event.preventDefault();
   scanProduct(el.scanInput.value);
+});
+el.productForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  addProduct();
 });
 el.resetButton.addEventListener("click", resetDemo);
 el.cameraButton.addEventListener("click", toggleCamera);
 document.addEventListener("keydown", handleScannerKey);
 
-loadState().catch((error) => setStatus(error.message, "warn"));
+loadState()
+  .then(() => el.productBarcode.focus())
+  .catch((error) => setStatus(error.message, "warn"));

@@ -19,9 +19,10 @@ http://localhost:5173
 ## Demo Flow
 
 1. Open the app.
-2. Scan a product barcode such as `SFP-10G-SR` with a USB/Bluetooth scanner, camera scanner, or the manual Scan button.
-3. The browser sends `POST /api/scan-product` to the backend.
-4. The backend subtracts 1 from that product's inventory.
+2. Add a real product barcode from the product label.
+3. Scan that same product barcode with a USB/Bluetooth scanner, camera scanner, or the manual Scan button.
+4. The browser sends `POST /api/scan-product` to the backend.
+5. The backend subtracts 1 from that product's inventory.
 5. The inventory table updates immediately.
 
 ## Scanner Support
@@ -35,7 +36,7 @@ http://localhost:5173
 ```bash
 curl -X POST http://localhost:5173/api/scan-product \
   -H 'Content-Type: application/json' \
-  -d '{"barcode":"SFP-10G-SR"}'
+  -d '{"barcode":"YOUR_REAL_BARCODE"}'
 ```
 
 Reset the demo:

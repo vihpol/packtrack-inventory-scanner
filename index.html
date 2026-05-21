@@ -29,7 +29,7 @@
           <form id="scanForm">
             <label for="scanInput">Product barcode or QR value</label>
             <div class="scan-row">
-              <input id="scanInput" autocomplete="off" placeholder="SFP-10G-SR" />
+              <input id="scanInput" autocomplete="off" placeholder="Scan real product barcode" />
               <button type="submit">Scan</button>
             </div>
           </form>
@@ -37,9 +37,20 @@
           <div id="status" class="status">Ready.</div>
         </article>
 
-        <article class="qr-card">
-          <h2>Demo product QRs</h2>
-          <div id="productQrList" class="qr-list"></div>
+        <article class="scanner-card">
+          <h2>Add real product</h2>
+          <form id="productForm">
+            <label for="productBarcode">Barcode from product label</label>
+            <input id="productBarcode" autocomplete="off" placeholder="Scan or type barcode" required />
+
+            <label for="productName">Product name</label>
+            <input id="productName" placeholder="Product name" required />
+
+            <label for="productQuantity">Starting quantity</label>
+            <input id="productQuantity" min="0" type="number" value="10" required />
+
+            <button type="submit">Add Product</button>
+          </form>
         </article>
       </section>
 
@@ -47,7 +58,7 @@
         <div class="card-heading">
           <div>
             <h2>Inventory</h2>
-            <p>These counts change immediately after a product is scanned.</p>
+            <p>Scan a registered product barcode and the count changes immediately.</p>
           </div>
           <button id="resetButton" type="button">Reset Demo</button>
         </div>

@@ -17,18 +17,12 @@ function now() {
 
 function starterData() {
   return {
-    inventory: [
-      { barcode: "SW-C9300-48P", name: "Cisco Catalyst 9300 48P Switch", quantity: 8 },
-      { barcode: "RTR-ISR4331", name: "Cisco ISR 4331 Router", quantity: 5 },
-      { barcode: "SFP-10G-SR", name: "10G SR SFP Module", quantity: 42 },
-      { barcode: "CAB-CAT6-03", name: "3 ft CAT6 Patch Cable", quantity: 180 },
-      { barcode: "PWR-C13-6FT", name: "6 ft C13 Power Cord", quantity: 75 },
-    ],
+    inventory: [],
     activity: [
       {
         id: newId(),
         type: "Demo ready",
-        details: "Scan any product barcode to update inventory",
+        details: "Add a real product, then scan its barcode",
         time: now(),
       },
     ],
@@ -102,6 +96,34 @@ function scanProduct(data, barcode) {
   });
 }
 
+function addProduct(data, product) {
+  const barcode = normalizeBarcode(product.barcode);
+  const name = String(product.name || "").trim();
+  const quantity = Number(product.quantity || 0);
+
+  if (!barcode || !name) {
+    throw new Error("Product barcode and name are required");
+  }
+  if (!Number.isFinite(quantity) || quantity < 0) {
+    throw new Error("Quantity must be 0 or higher");
+  }
+
+  const existing = findInventory(data, barcode);
+  if (existing) {
+    existing.name = name;
+    existing.quantity = quantity;
+  } else {
+    data.inventory.push({ barcode, name, quantity });
+  }
+
+  data.activity.unshift({
+    id: newId(),
+    type: "Product added",
+    details: `${name} is ready to scan`,
+    time: now(),
+  });
+}
+
 async function handleApi(req, res, url) {
   if (req.method === "GET" && url.pathname === "/api/state") {
     sendJson(res, 200, readDb());
@@ -121,6 +143,22 @@ async function handleApi(req, res, url) {
 
     try {
       scanProduct(data, body.barcode);
+    } catch (error) {
+      sendError(res, 400, error.message);
+      return;
+    }
+
+    writeDb(data);
+    sendJson(res, 200, data);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/products") {
+    const data = readDb();
+    const body = await readBody(req);
+
+    try {
+      addProduct(data, body);
     } catch (error) {
       sendError(res, 400, error.message);
       return;
