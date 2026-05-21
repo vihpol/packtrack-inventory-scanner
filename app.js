@@ -131,6 +131,10 @@ async function loadState() {
   }
 }
 
+function getBarcodeFromPageUrl() {
+  return normalizeScan(window.location.href);
+}
+
 async function scanProduct(value) {
   const barcode = normalizeScan(value);
   if (!barcode) return;
@@ -284,5 +288,13 @@ el.cameraButton.addEventListener("click", toggleCamera);
 document.addEventListener("keydown", handleScannerKey);
 
 loadState()
-  .then(() => el.scanInput.focus())
+  .then(() => {
+    const barcodeFromUrl = getBarcodeFromPageUrl();
+    if (barcodeFromUrl) {
+      el.scanInput.value = barcodeFromUrl;
+      scanProduct(barcodeFromUrl);
+      return;
+    }
+    el.scanInput.focus();
+  })
   .catch((error) => setStatus(error.message, "warn"));

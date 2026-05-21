@@ -29,6 +29,23 @@ http://localhost:5173
 - USB and Bluetooth barcode scanners work as keyboard input. Scan the product barcode and the app updates inventory when the scanner sends Enter.
 - Manual entry works for testing.
 - Camera scanning uses the browser `BarcodeDetector` API when available.
+- Phone camera testing works by scanning a QR code that opens `/scan?barcode=YOUR_REAL_BARCODE`.
+
+## Phone Camera Test
+
+Create a QR code whose value is:
+
+```text
+http://localhost:5173/scan?barcode=YOUR_REAL_BARCODE
+```
+
+On the VM/network demo, use:
+
+```text
+http://192.168.1.226:5173/scan?barcode=YOUR_REAL_BARCODE
+```
+
+When the phone opens that URL, the app reads the barcode from the URL and updates inventory automatically.
 
 ## REST API
 
