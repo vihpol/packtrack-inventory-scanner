@@ -1,4 +1,10 @@
-const DEMO_BOXES = ["BOX-1001", "BOX-1002"];
+const DEMO_PRODUCTS = [
+  "SW-C9300-48P",
+  "RTR-ISR4331",
+  "SFP-10G-SR",
+  "CAB-CAT6-03",
+  "PWR-C13-6FT",
+];
 
 const el = {
   scanForm: document.querySelector("#scanForm"),
@@ -7,27 +13,21 @@ const el = {
   inventoryBody: document.querySelector("#inventoryBody"),
   resetButton: document.querySelector("#resetButton"),
   scanLog: document.querySelector("#scanLog"),
-  qrList: document.querySelector("#qrList"),
+  productQrList: document.querySelector("#productQrList"),
   cameraButton: document.querySelector("#cameraButton"),
   cameraPreview: document.querySelector("#cameraPreview"),
   cameraFrame: document.querySelector(".camera-frame"),
 };
 
 let previousInventory = new Map();
+let scannerBuffer = "";
+let scannerTimer = null;
 let cameraStream = null;
 let detector = null;
 let cameraActive = false;
 
 function normalizeScan(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-
-  try {
-    const url = new URL(raw, window.location.origin);
-    return (url.searchParams.get("box") || raw).trim().toUpperCase();
-  } catch (error) {
-    return raw.toUpperCase();
-  }
+  return String(value || "").trim().toUpperCase();
 }
 
 async function api(path, options = {}) {
@@ -67,12 +67,7 @@ function renderInventory(items) {
 
 function renderLog(activity) {
   const latest = activity[0];
-  if (!latest) {
-    el.scanLog.textContent = "No box scanned yet.";
-    return;
-  }
-
-  el.scanLog.textContent = `${latest.type}: ${latest.details}`;
+  el.scanLog.textContent = latest ? `${latest.type}: ${latest.details}` : "No product scanned yet.";
 }
 
 async function loadState() {
@@ -81,22 +76,22 @@ async function loadState() {
   renderLog(data.activity);
 }
 
-async function scanBox(value) {
-  const boxId = normalizeScan(value);
-  if (!boxId) return;
+async function scanProduct(value) {
+  const barcode = normalizeScan(value);
+  if (!barcode) return;
 
-  setStatus(`Scanning ${boxId}...`);
+  setStatus(`Scanned ${barcode}. Updating inventory...`);
 
   try {
-    const result = await api("/api/scan-box", {
+    const result = await api("/api/scan-product", {
       method: "POST",
-      body: JSON.stringify({ boxId }),
+      body: JSON.stringify({ barcode }),
     });
 
     renderInventory(result.inventory);
     renderLog(result.activity);
-    setStatus(`${boxId} scanned. Inventory updated.`, "ok");
-    el.scanInput.value = boxId;
+    setStatus(`${barcode} updated inventory immediately.`, "ok");
+    el.scanInput.value = "";
   } catch (error) {
     setStatus(error.message, "warn");
   }
@@ -106,9 +101,25 @@ async function resetDemo() {
   const data = await api("/api/reset", { method: "POST" });
   previousInventory = new Map();
   renderInventory(data.inventory);
-  renderLog([]);
-  el.scanInput.value = DEMO_BOXES[0];
-  setStatus("Demo reset. Scan BOX-1001 or BOX-1002.", "ok");
+  renderLog(data.activity);
+  el.scanInput.value = "";
+  setStatus("Demo reset. Scan a product barcode.", "ok");
+}
+
+function handleScannerKey(event) {
+  if (event.target.tagName === "INPUT") return;
+  if (event.key === "Enter") {
+    scanProduct(scannerBuffer);
+    scannerBuffer = "";
+    return;
+  }
+  if (event.key.length !== 1) return;
+
+  scannerBuffer += event.key;
+  clearTimeout(scannerTimer);
+  scannerTimer = setTimeout(() => {
+    scannerBuffer = "";
+  }, 250);
 }
 
 async function toggleCamera() {
@@ -152,7 +163,7 @@ async function detectLoop() {
   try {
     const codes = await detector.detect(el.cameraPreview);
     if (codes.length > 0) {
-      await scanBox(codes[0].rawValue);
+      await scanProduct(codes[0].rawValue);
       await new Promise((resolve) => setTimeout(resolve, 1200));
     }
   } catch (error) {
@@ -171,19 +182,21 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-el.qrList.innerHTML = DEMO_BOXES.map(
-  (boxId) => `
+el.productQrList.innerHTML = DEMO_PRODUCTS.map(
+  (barcode) => `
     <div class="qr-tile">
-      <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(boxId)}" alt="QR code for ${boxId}" />
-      <p>${boxId}</p>
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(barcode)}" alt="QR code for ${barcode}" />
+      <p>${barcode}</p>
     </div>
   `,
 ).join("");
+
 el.scanForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  scanBox(el.scanInput.value);
+  scanProduct(el.scanInput.value);
 });
 el.resetButton.addEventListener("click", resetDemo);
 el.cameraButton.addEventListener("click", toggleCamera);
+document.addEventListener("keydown", handleScannerKey);
 
 loadState().catch((error) => setStatus(error.message, "warn"));

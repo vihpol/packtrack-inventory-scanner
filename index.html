@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Box Scan Inventory Demo</title>
+    <title>Product Scan Inventory Demo</title>
     <link rel="stylesheet" href="./styles.css" />
     <script src="./app.js?v=simple-scan-demo" defer></script>
   </head>
@@ -11,7 +11,7 @@
     <main class="page">
       <section class="hero">
         <p class="eyebrow">REST API demo</p>
-        <h1>Scan a box. Inventory updates.</h1>
+        <h1>Scan a product. Inventory updates.</h1>
       </section>
 
       <section class="demo-grid">
@@ -23,13 +23,13 @@
 
           <div class="camera-frame">
             <video id="cameraPreview" playsinline muted></video>
-            <div id="cameraPlaceholder">Scan BOX-1001</div>
+            <div id="cameraPlaceholder">Scan product barcode</div>
           </div>
 
           <form id="scanForm">
-            <label for="scanInput">Box barcode or QR value</label>
+            <label for="scanInput">Product barcode or QR value</label>
             <div class="scan-row">
-              <input id="scanInput" autocomplete="off" value="BOX-1001" />
+              <input id="scanInput" autocomplete="off" placeholder="SFP-10G-SR" />
               <button type="submit">Scan</button>
             </div>
           </form>
@@ -38,8 +38,8 @@
         </article>
 
         <article class="qr-card">
-          <h2>Demo box QRs</h2>
-          <div id="qrList" class="qr-list"></div>
+          <h2>Demo product QRs</h2>
+          <div id="productQrList" class="qr-list"></div>
         </article>
       </section>
 
@@ -47,7 +47,7 @@
         <div class="card-heading">
           <div>
             <h2>Inventory</h2>
-            <p>These counts change immediately after the box is scanned.</p>
+            <p>These counts change immediately after a product is scanned.</p>
           </div>
           <button id="resetButton" type="button">Reset Demo</button>
         </div>
@@ -65,7 +65,7 @@
 
       <section class="log-card">
         <h2>Last scan</h2>
-        <div id="scanLog">No box scanned yet.</div>
+        <div id="scanLog">No product scanned yet.</div>
       </section>
     </main>
   </body>

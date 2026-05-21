@@ -18,57 +18,17 @@ function now() {
 function starterData() {
   return {
     inventory: [
-      {
-        barcode: "SW-C9300-48P",
-        name: "Cisco Catalyst 9300 48P Switch",
-        quantity: 8,
-      },
-      {
-        barcode: "RTR-ISR4331",
-        name: "Cisco ISR 4331 Router",
-        quantity: 5,
-      },
-      {
-        barcode: "SFP-10G-SR",
-        name: "10G SR SFP Module",
-        quantity: 42,
-      },
-      {
-        barcode: "CAB-CAT6-03",
-        name: "3 ft CAT6 Patch Cable",
-        quantity: 180,
-      },
-      {
-        barcode: "PWR-C13-6FT",
-        name: "6 ft C13 Power Cord",
-        quantity: 75,
-      },
-    ],
-    boxes: [
-      {
-        id: "BOX-1001",
-        status: "ready",
-        items: [
-          { barcode: "SW-C9300-48P", quantity: 1 },
-          { barcode: "SFP-10G-SR", quantity: 4 },
-          { barcode: "CAB-CAT6-03", quantity: 10 },
-        ],
-      },
-      {
-        id: "BOX-1002",
-        status: "ready",
-        items: [
-          { barcode: "RTR-ISR4331", quantity: 1 },
-          { barcode: "SFP-10G-SR", quantity: 2 },
-          { barcode: "PWR-C13-6FT", quantity: 2 },
-        ],
-      },
+      { barcode: "SW-C9300-48P", name: "Cisco Catalyst 9300 48P Switch", quantity: 8 },
+      { barcode: "RTR-ISR4331", name: "Cisco ISR 4331 Router", quantity: 5 },
+      { barcode: "SFP-10G-SR", name: "10G SR SFP Module", quantity: 42 },
+      { barcode: "CAB-CAT6-03", name: "3 ft CAT6 Patch Cable", quantity: 180 },
+      { barcode: "PWR-C13-6FT", name: "6 ft C13 Power Cord", quantity: 75 },
     ],
     activity: [
       {
         id: newId(),
-        type: "Demo box staged",
-        details: "BOX-1001 is ready to scan",
+        type: "Demo ready",
+        details: "Scan any product barcode to update inventory",
         time: now(),
       },
     ],
@@ -112,48 +72,32 @@ function readBody(req) {
   });
 }
 
+function normalizeBarcode(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
 function findInventory(data, barcode) {
   return data.inventory.find(
     (item) => item.barcode.toLowerCase() === String(barcode).toLowerCase(),
   );
 }
 
-function findBox(data, boxId) {
-  return data.boxes.find((box) => box.id.toLowerCase() === String(boxId).toLowerCase());
-}
+function scanProduct(data, barcode) {
+  const normalized = normalizeBarcode(barcode);
+  const item = findInventory(data, normalized);
 
-function scanBox(data, boxId) {
-  const normalized = String(boxId || "").trim().toUpperCase();
-  const box = findBox(data, normalized);
-
-  if (!box) {
-    throw new Error(`${normalized || "Box"} was not found`);
+  if (!item) {
+    throw new Error(`${normalized || "Product"} was not found in inventory`);
   }
-  if (box.status === "scanned") {
-    throw new Error(`${box.id} was already scanned. Reset the demo to scan again.`);
+  if (item.quantity <= 0) {
+    throw new Error(`${item.name} is out of stock`);
   }
 
-  for (const packed of box.items) {
-    const item = findInventory(data, packed.barcode);
-    if (!item) {
-      throw new Error(`${packed.barcode} is missing from inventory`);
-    }
-    if (item.quantity < packed.quantity) {
-      throw new Error(`Not enough ${item.name} available`);
-    }
-  }
-
-  for (const packed of box.items) {
-    const item = findInventory(data, packed.barcode);
-    item.quantity -= packed.quantity;
-  }
-
-  box.status = "scanned";
-  box.scannedAt = now();
+  item.quantity -= 1;
   data.activity.unshift({
     id: newId(),
-    type: "Box scanned",
-    details: `${box.id} updated inventory automatically`,
+    type: "Product scanned",
+    details: `${item.name} inventory reduced to ${item.quantity}`,
     time: now(),
   });
 }
@@ -171,14 +115,14 @@ async function handleApi(req, res, url) {
     return;
   }
 
-  if (req.method === "POST" && url.pathname === "/api/scan-box") {
+  if (req.method === "POST" && url.pathname === "/api/scan-product") {
     const data = readDb();
     const body = await readBody(req);
 
     try {
-      scanBox(data, body.boxId);
+      scanProduct(data, body.barcode);
     } catch (error) {
-      sendError(res, error.message.includes("already scanned") ? 409 : 400, error.message);
+      sendError(res, 400, error.message);
       return;
     }
 
@@ -237,5 +181,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Box scan demo running at http://localhost:${PORT}`);
+  console.log(`Product scan demo running at http://localhost:${PORT}`);
 });

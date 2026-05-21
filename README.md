@@ -1,6 +1,6 @@
-# Box Scan Inventory Demo
+# Product Scan Inventory Demo
 
-A minimal demo where scanning one box barcode/QR code immediately updates inventory through a REST API.
+A minimal demo where scanning a real product barcode/QR code immediately updates inventory through a REST API.
 
 ## Try It
 
@@ -19,23 +19,23 @@ http://localhost:5173
 ## Demo Flow
 
 1. Open the app.
-2. Scan `BOX-1001` or `BOX-1002` with a USB/Bluetooth scanner, camera scanner, or the manual Scan button.
-3. The browser sends `POST /api/scan-box` to the backend.
-4. The backend subtracts the items inside `BOX-1001` from inventory.
+2. Scan a product barcode such as `SFP-10G-SR` with a USB/Bluetooth scanner, camera scanner, or the manual Scan button.
+3. The browser sends `POST /api/scan-product` to the backend.
+4. The backend subtracts 1 from that product's inventory.
 5. The inventory table updates immediately.
 
 ## Scanner Support
 
-- USB and Bluetooth barcode scanners work as keyboard input. Click the scan field and scan the box.
+- USB and Bluetooth barcode scanners work as keyboard input. Scan the product barcode and the app updates inventory when the scanner sends Enter.
 - Manual entry works for testing.
 - Camera scanning uses the browser `BarcodeDetector` API when available.
 
 ## REST API
 
 ```bash
-curl -X POST http://localhost:5173/api/scan-box \
+curl -X POST http://localhost:5173/api/scan-product \
   -H 'Content-Type: application/json' \
-  -d '{"boxId":"BOX-1001"}'
+  -d '{"barcode":"SFP-10G-SR"}'
 ```
 
 Reset the demo:
