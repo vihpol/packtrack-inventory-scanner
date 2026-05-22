@@ -173,106 +173,27 @@ p {
   margin-bottom: 0;
 }
 
-.camera-frame {
-  position: relative;
-  display: grid;
-  place-items: center;
-  min-height: 300px;
-  overflow: hidden;
-  border: 1px solid #b9c7d4;
-  border-radius: 8px;
-  background:
-    linear-gradient(90deg, rgba(15, 118, 110, 0.12) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(15, 118, 110, 0.12) 1px, transparent 1px),
-    #f8fbfc;
-  background-size: 32px 32px;
-}
-
-#cameraPreview {
-  display: none;
-  width: 100%;
-  height: 100%;
-  min-height: 300px;
-  object-fit: cover;
-}
-
-#cameraReader {
-  display: none;
-  width: 100%;
-  min-height: 300px;
-}
-
-#cameraReader video {
-  min-height: 300px;
-  object-fit: cover;
-}
-
-.camera-on #cameraPreview {
-  display: block;
-}
-
-.library-camera-on #cameraPreview {
-  display: none;
-}
-
-.library-camera-on #cameraReader {
-  display: block;
-}
-
-#cameraPlaceholder {
-  position: absolute;
-  display: grid;
-  place-items: center;
-  width: min(72%, 420px);
-  height: 120px;
-  overflow: hidden;
-  border: 2px solid var(--primary);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--primary-dark);
-}
-
-#cameraPlaceholder strong {
-  position: relative;
-  z-index: 1;
-  font-size: 1.4rem;
-  font-weight: 900;
-}
-
-.scan-beam {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 0 40%, rgba(15, 118, 110, 0.22) 48%, transparent 58% 100%);
-  animation: scanBeam 2.4s ease-in-out infinite;
-}
-
-.camera-on #cameraPlaceholder {
-  pointer-events: none;
-  border-color: #fff;
-  color: #fff;
-  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
-}
-
-.library-camera-on #cameraPlaceholder {
-  display: none;
-}
-
 form {
   display: grid;
   gap: 8px;
   margin-top: 16px;
 }
 
+.product-form {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr) 110px auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.product-form > div {
+  display: grid;
+  gap: 8px;
+}
+
 label {
   color: #41505f;
   font-size: 0.88rem;
   font-weight: 800;
-}
-
-.scan-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
 }
 
 input {
@@ -380,6 +301,10 @@ tbody tr:hover {
   font-weight: 900;
 }
 
+.unknown-panel button {
+  margin-top: 12px;
+}
+
 .scan-success {
   border-color: rgba(21, 128, 61, 0.4);
   box-shadow: 0 18px 42px rgba(21, 128, 61, 0.12);
@@ -393,17 +318,6 @@ tbody tr:hover {
 
 .inventory-updated {
   border-color: rgba(15, 118, 110, 0.42);
-}
-
-@keyframes scanBeam {
-  0%,
-  100% {
-    transform: translateY(-45%);
-  }
-
-  50% {
-    transform: translateY(45%);
-  }
 }
 
 @keyframes countPop {
@@ -426,7 +340,7 @@ tbody tr:hover {
   }
 
   .card-heading,
-  .scan-row {
+  .product-form {
     grid-template-columns: 1fr;
   }
 

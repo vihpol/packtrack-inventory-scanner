@@ -1,36 +1,28 @@
 const el = {
-  scanForm: document.querySelector("#scanForm"),
-  scanInput: document.querySelector("#scanInput"),
-  scanButton: document.querySelector("#scanButton"),
+  productForm: document.querySelector("#productForm"),
+  productName: document.querySelector("#productName"),
+  productBarcode: document.querySelector("#productBarcode"),
+  productQuantity: document.querySelector("#productQuantity"),
+  addProductButton: document.querySelector("#addProductButton"),
   status: document.querySelector("#status"),
   inventoryBody: document.querySelector("#inventoryBody"),
   inventoryCount: document.querySelector("#inventoryCount"),
   syncStatus: document.querySelector("#syncStatus"),
-  scannerPanel: document.querySelector("#scannerPanel"),
+  addProductPanel: document.querySelector("#addProductPanel"),
   inventoryPanel: document.querySelector("#inventoryPanel"),
   lastScanPanel: document.querySelector("#lastScanPanel"),
   unknownScanPanel: document.querySelector("#unknownScanPanel"),
   unknownCode: document.querySelector("#unknownCode"),
+  useUnknownButton: document.querySelector("#useUnknownButton"),
   resetButton: document.querySelector("#resetButton"),
   scanLog: document.querySelector("#scanLog"),
-  cameraButton: document.querySelector("#cameraButton"),
-  cameraPreview: document.querySelector("#cameraPreview"),
-  cameraFrame: document.querySelector(".camera-frame"),
-  cameraReader: document.querySelector("#cameraReader"),
   serverNotice: document.querySelector("#serverNotice"),
 };
 
 let previousInventory = new Map();
-let scannerBuffer = "";
-let scannerTimer = null;
-let inputScanTimer = null;
 let scanInFlight = false;
 let lastSubmittedBarcode = "";
 let lastSubmittedAt = 0;
-let cameraStream = null;
-let detector = null;
-let cameraActive = false;
-let webScanner = null;
 
 function isFileMode() {
   return window.location.protocol === "file:";
@@ -183,9 +175,7 @@ async function scanProduct(value) {
   const now = Date.now();
   if (barcode === lastSubmittedBarcode && now - lastSubmittedAt < 1800) {
     setStatus(`${barcode} was just scanned. Duplicate ignored.`, "warn");
-    flash(el.scannerPanel, "scan-warning");
-    el.scanInput.value = "";
-    el.scanInput.focus();
+    flash(el.lastScanPanel, "scan-warning");
     return;
   }
 
@@ -193,8 +183,6 @@ async function scanProduct(value) {
   scanInFlight = true;
   lastSubmittedBarcode = barcode;
   lastSubmittedAt = now;
-  el.scanButton.disabled = true;
-  el.scanInput.disabled = true;
 
   try {
     const result = await api("/api/scan-product", {
@@ -207,24 +195,56 @@ async function scanProduct(value) {
     if (result.matched === false) {
       renderUnknownScan(result.scannedBarcode || barcode);
       setStatus(`${barcode} was read, but it is not registered in inventory.`, "warn");
-      flash(el.scannerPanel, "scan-warning");
+      flash(el.lastScanPanel, "scan-warning");
     } else {
       renderUnknownScan("");
       setStatus(`${barcode} updated inventory immediately.`, "ok");
-      flash(el.scannerPanel, "scan-success");
       flash(el.inventoryPanel, "inventory-updated");
       flash(el.lastScanPanel, "scan-success");
     }
-    el.scanInput.value = "";
-    el.scanInput.focus();
   } catch (error) {
     setStatus(error.message, "warn");
-    flash(el.scannerPanel, "scan-warning");
+    flash(el.lastScanPanel, "scan-warning");
   } finally {
     scanInFlight = false;
-    el.scanButton.disabled = false;
-    el.scanInput.disabled = false;
-    el.scanInput.focus();
+  }
+}
+
+async function addProduct(event) {
+  event.preventDefault();
+
+  const barcode = normalizeScan(el.productBarcode.value);
+  const name = el.productName.value.trim();
+  const quantity = Number(el.productQuantity.value);
+
+  if (!barcode || !name || !Number.isFinite(quantity) || quantity < 0) {
+    setStatus("Enter a product name, barcode, and quantity.", "warn");
+    flash(el.addProductPanel, "scan-warning");
+    return;
+  }
+
+  el.addProductButton.disabled = true;
+  setStatus(`Adding ${name}...`);
+
+  try {
+    const data = await api("/api/products", {
+      method: "POST",
+      body: JSON.stringify({ barcode, name, quantity }),
+    });
+    renderInventory(data.inventory);
+    renderLog(data.activity);
+    renderUnknownScan("");
+    el.productForm.reset();
+    el.productQuantity.value = "5";
+    el.productName.focus();
+    setStatus(`${name} is ready to scan.`, "ok");
+    flash(el.addProductPanel, "scan-success");
+    flash(el.inventoryPanel, "inventory-updated");
+  } catch (error) {
+    setStatus(error.message, "warn");
+    flash(el.addProductPanel, "scan-warning");
+  } finally {
+    el.addProductButton.disabled = false;
   }
 }
 
@@ -234,145 +254,18 @@ async function resetDemo() {
   renderInventory(data.inventory);
   renderLog(data.activity);
   renderUnknownScan("");
-  el.scanInput.value = "";
   setStatus("Demo reset.", "ok");
-  el.scanInput.focus();
+  el.productName.focus();
 }
 
-function handleScannerKey(event) {
-  if (event.target.tagName === "INPUT") return;
-  if (event.key === "Enter") {
-    scanProduct(scannerBuffer);
-    scannerBuffer = "";
-    return;
-  }
-  if (event.key.length !== 1) return;
+function useUnknownBarcode() {
+  const barcode = el.unknownCode.textContent.trim();
+  if (!barcode) return;
 
-  scannerBuffer += event.key;
-  clearTimeout(scannerTimer);
-  scannerTimer = setTimeout(() => {
-    scannerBuffer = "";
-  }, 250);
-}
-
-function scheduleInputScan() {
-  window.clearTimeout(inputScanTimer);
-  const barcode = normalizeScan(el.scanInput.value);
-  if (barcode.length < 4) return;
-
-  inputScanTimer = window.setTimeout(() => {
-    scanProduct(el.scanInput.value);
-  }, 450);
-}
-
-async function toggleCamera() {
-  if (cameraStream || webScanner) {
-    await stopCamera();
-    return;
-  }
-
-  if (!window.isSecureContext || !navigator.mediaDevices) {
-    setStatus("Phone camera scanning needs HTTPS. Use an HTTPS tunnel to this app, then tap Camera again.", "warn");
-    return;
-  }
-
-  if (window.Html5Qrcode) {
-    startWebScanner();
-    return;
-  }
-
-  if (!("BarcodeDetector" in window)) {
-    setStatus("This browser cannot read barcodes directly. Use Chrome/Edge, HTTPS, or a USB/Bluetooth scanner.", "warn");
-    return;
-  }
-
-  try {
-    detector = new BarcodeDetector({ formats: ["qr_code", "code_128", "code_39"] });
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-      audio: false,
-    });
-    el.cameraPreview.srcObject = cameraStream;
-    await el.cameraPreview.play();
-    el.cameraFrame.classList.add("camera-on");
-    el.cameraButton.textContent = "Stop";
-    cameraActive = true;
-    detectLoop();
-  } catch (error) {
-    setStatus("Camera permission was blocked or unavailable.", "warn");
-  }
-}
-
-async function startWebScanner() {
-  try {
-    webScanner = new Html5Qrcode("cameraReader", {
-      formatsToSupport: getSupportedWebScannerFormats(),
-    });
-
-    el.cameraFrame.classList.add("camera-on", "library-camera-on");
-    el.cameraButton.textContent = "Stop";
-    setStatus("Camera is on. Point it at a barcode or QR code.");
-
-    await webScanner.start(
-      { facingMode: "environment" },
-      {
-        fps: 10,
-        qrbox: { width: 260, height: 180 },
-        aspectRatio: 1.777,
-      },
-      async (decodedText) => {
-        await scanProduct(decodedText);
-      }
-    );
-  } catch (error) {
-    webScanner = null;
-    el.cameraFrame.classList.remove("camera-on", "library-camera-on");
-    el.cameraButton.textContent = "Camera";
-    setStatus("Camera permission was blocked or unavailable.", "warn");
-  }
-}
-
-function getSupportedWebScannerFormats() {
-  if (!window.Html5QrcodeSupportedFormats) return undefined;
-
-  return [
-    Html5QrcodeSupportedFormats.QR_CODE,
-    Html5QrcodeSupportedFormats.CODE_128,
-    Html5QrcodeSupportedFormats.CODE_39,
-    Html5QrcodeSupportedFormats.EAN_13,
-    Html5QrcodeSupportedFormats.UPC_A,
-    Html5QrcodeSupportedFormats.UPC_E,
-  ].filter(Boolean);
-}
-
-async function stopCamera() {
-  cameraActive = false;
-  if (webScanner) {
-    await webScanner.stop().catch(() => {});
-    webScanner.clear();
-    webScanner = null;
-  }
-  cameraStream?.getTracks().forEach((track) => track.stop());
-  cameraStream = null;
-  el.cameraPreview.srcObject = null;
-  el.cameraFrame.classList.remove("camera-on", "library-camera-on");
-  el.cameraButton.textContent = "Camera";
-}
-
-async function detectLoop() {
-  if (!cameraActive || !detector) return;
-
-  try {
-    const codes = await detector.detect(el.cameraPreview);
-    if (codes.length > 0) {
-      await scanProduct(codes[0].rawValue);
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-    }
-  } catch (error) {
-    setStatus("Camera scan paused.", "warn");
-  }
-
-  requestAnimationFrame(detectLoop);
+  el.productBarcode.value = barcode;
+  el.productName.focus();
+  setStatus("Unknown barcode copied into the product form. Add a name and quantity.", "ok");
+  flash(el.addProductPanel, "scan-success");
 }
 
 function escapeHtml(value) {
@@ -384,15 +277,9 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-el.scanForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  window.clearTimeout(inputScanTimer);
-  scanProduct(el.scanInput.value);
-});
-el.scanInput.addEventListener("input", scheduleInputScan);
+el.productForm.addEventListener("submit", addProduct);
 el.resetButton.addEventListener("click", resetDemo);
-el.cameraButton.addEventListener("click", toggleCamera);
-document.addEventListener("keydown", handleScannerKey);
+el.useUnknownButton.addEventListener("click", useUnknownBarcode);
 
 showServerNotice();
 
@@ -400,10 +287,9 @@ loadState()
   .then(() => {
     const barcodeFromUrl = getBarcodeFromPageUrl();
     if (barcodeFromUrl) {
-      el.scanInput.value = barcodeFromUrl;
       scanProduct(barcodeFromUrl);
       return;
     }
-    el.scanInput.focus();
+    el.productName.focus();
   })
   .catch((error) => setStatus(error.message, "warn"));

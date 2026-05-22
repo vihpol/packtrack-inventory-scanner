@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Product Scan Inventory Demo</title>
     <link rel="stylesheet" href="./styles.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
     <script src="./app.js?v=simple-scan-demo" defer></script>
   </head>
   <body>
@@ -13,8 +12,7 @@
       <section class="hero">
         <h1>Scan a product. Inventory updates.</h1>
         <p class="intro">
-          This demo shows how a real product barcode scanner can update digital inventory automatically.
-          Scan a product's barcode and the backend immediately reduces the available count.
+          This dashboard lets you register a product barcode, then watch inventory change when that barcode is scanned.
         </p>
         <div id="serverNotice" class="server-notice" hidden>
           Open this demo at <a href="http://localhost:5173">http://localhost:5173</a> so scans can update inventory.
@@ -22,7 +20,7 @@
         <div class="status-strip" aria-label="System status">
           <div>
             <span class="status-dot"></span>
-            Scanner ready
+            Dashboard ready
           </div>
           <div id="syncStatus">Checking inventory sync</div>
           <div id="inventoryCount">0 products loaded</div>
@@ -30,30 +28,28 @@
       </section>
 
       <section class="flow">
-        <article id="scannerPanel" class="panel scanner-panel">
+        <article id="addProductPanel" class="panel">
           <div class="card-heading">
             <div>
-              <h2>1. Scan product barcode</h2>
-              <p>A USB or Bluetooth scanner acts like a keyboard. Scan, then inventory updates.</p>
-            </div>
-            <button id="cameraButton" type="button">Camera</button>
-          </div>
-
-          <div class="camera-frame">
-            <video id="cameraPreview" playsinline muted></video>
-            <div id="cameraReader"></div>
-            <div id="cameraPlaceholder">
-              <span class="scan-beam"></span>
-              <strong>Scan product barcode</strong>
+              <h2>1. Add product</h2>
+              <p>Register the barcode once, then every scan can update its inventory count.</p>
             </div>
           </div>
 
-          <form id="scanForm">
-            <label for="scanInput">Product barcode or QR value</label>
-            <div class="scan-row">
-              <input id="scanInput" autocomplete="off" placeholder="Scan real product barcode" />
-              <button id="scanButton" type="submit">Scan</button>
+          <form id="productForm" class="product-form">
+            <div>
+              <label for="productName">Product name</label>
+              <input id="productName" autocomplete="off" placeholder="Cisco switch" required />
             </div>
+            <div>
+              <label for="productBarcode">Barcode or QR value</label>
+              <input id="productBarcode" autocomplete="off" placeholder="Paste or type the scanned code" required />
+            </div>
+            <div>
+              <label for="productQuantity">Quantity</label>
+              <input id="productQuantity" type="number" min="0" step="1" value="5" required />
+            </div>
+            <button id="addProductButton" type="submit">Add product</button>
           </form>
 
           <div id="status" class="status">Ready for a scan.</div>
@@ -88,6 +84,7 @@
           <h2>Unknown barcode read</h2>
           <p>The scanner successfully read this code, but it is not registered in inventory.</p>
           <code id="unknownCode"></code>
+          <button id="useUnknownButton" type="button">Use this barcode</button>
         </article>
       </section>
     </main>
