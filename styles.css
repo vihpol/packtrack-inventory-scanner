@@ -100,6 +100,22 @@ p {
   line-height: 1.55;
 }
 
+.server-notice {
+  margin-bottom: 14px;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fff8ed;
+  color: #9a3412;
+  font-weight: 850;
+  line-height: 1.4;
+}
+
+.server-notice a {
+  color: #0b5f59;
+  font-weight: 950;
+}
+
 .status-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

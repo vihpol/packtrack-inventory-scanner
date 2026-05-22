@@ -16,6 +16,7 @@ const el = {
   cameraButton: document.querySelector("#cameraButton"),
   cameraPreview: document.querySelector("#cameraPreview"),
   cameraFrame: document.querySelector(".camera-frame"),
+  serverNotice: document.querySelector("#serverNotice"),
 };
 
 let previousInventory = new Map();
@@ -28,6 +29,17 @@ let lastSubmittedAt = 0;
 let cameraStream = null;
 let detector = null;
 let cameraActive = false;
+
+function isFileMode() {
+  return window.location.protocol === "file:";
+}
+
+function showServerNotice() {
+  if (!isFileMode()) return;
+  el.serverNotice.hidden = false;
+  setStatus("This page was opened as a file. Open http://localhost:5173 so scans can update inventory.", "warn");
+  el.syncStatus.textContent = "Inventory sync offline";
+}
 
 function normalizeScan(value) {
   const raw = String(value || "").trim();
@@ -50,6 +62,10 @@ function normalizeScan(value) {
 }
 
 async function api(path, options = {}) {
+  if (isFileMode()) {
+    throw new Error("Open http://localhost:5173 so the app can reach the inventory server.");
+  }
+
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 6000);
 
@@ -146,7 +162,15 @@ async function loadState() {
 }
 
 function getBarcodeFromPageUrl() {
-  return normalizeScan(window.location.href);
+  const params = new URLSearchParams(window.location.search);
+  return normalizeScan(
+    params.get("barcode") ||
+      params.get("sku") ||
+      params.get("upc") ||
+      params.get("code") ||
+      params.get("product") ||
+      ""
+  );
 }
 
 async function scanProduct(value) {
@@ -308,6 +332,8 @@ el.scanInput.addEventListener("input", scheduleInputScan);
 el.resetButton.addEventListener("click", resetDemo);
 el.cameraButton.addEventListener("click", toggleCamera);
 document.addEventListener("keydown", handleScannerKey);
+
+showServerNotice();
 
 loadState()
   .then(() => {
