@@ -1,6 +1,6 @@
 # Product Scan Inventory Demo
 
-A minimal demo where scanning a real product barcode/QR code immediately updates inventory through a REST API.
+A minimal three-column demo where barcode/QR scans update inventory, incoming receipts, and outgoing inventory.
 
 ## Try It
 
@@ -21,18 +21,19 @@ If you run `npm start` again while the server is already open, the app will now 
 ## Demo Flow
 
 1. Open the app.
-2. Add a product with its real barcode/QR value and starting quantity.
-3. Scan a QR code that opens `/scan?barcode=YOUR_REAL_BARCODE`.
-4. The browser sends `POST /api/scan-product` to the backend.
-5. The backend subtracts 1 from that product's inventory.
-6. The inventory table updates immediately.
+2. Manually create an inventory entry, or scan a brand-new barcode.
+3. A new barcode is treated as incoming inventory and creates an inventory row.
+4. Scanning an existing barcode through `/scan?barcode=YOUR_REAL_BARCODE` treats it as outgoing inventory and decreases quantity.
+5. The dashboard updates the Inventory list, Incoming inventory, and Outgoing inventory columns.
 
 ## Scanner Support
 
-- The Mac page is an inventory dashboard. It does not use the camera.
-- Use the Add product form to register a barcode and quantity without using `curl`.
+- The Mac page is an inventory dashboard with three columns.
+- Use the Create entry form to manually add barcode, description, cost, and quantity.
+- Use the Incoming inventory form to receive new or existing products.
+- Use the Outgoing inventory form to sell, ship, or return existing products.
 - Phone camera testing works by scanning a QR code that opens `/scan?barcode=YOUR_REAL_BARCODE`.
-- If a scanned code is unknown, the app shows it and lets you copy it into the Add product form.
+- You can force a phone scan direction with `/scan?mode=incoming&barcode=...` or `/scan?mode=outgoing&barcode=...`.
 
 ## Phone Camera Test
 

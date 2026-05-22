@@ -1,28 +1,33 @@
 const el = {
   productForm: document.querySelector("#productForm"),
-  productName: document.querySelector("#productName"),
   productBarcode: document.querySelector("#productBarcode"),
+  productDescription: document.querySelector("#productDescription"),
+  productCost: document.querySelector("#productCost"),
   productQuantity: document.querySelector("#productQuantity"),
   addProductButton: document.querySelector("#addProductButton"),
+  incomingForm: document.querySelector("#incomingForm"),
+  incomingBarcode: document.querySelector("#incomingBarcode"),
+  incomingDescription: document.querySelector("#incomingDescription"),
+  incomingCost: document.querySelector("#incomingCost"),
+  incomingQuantity: document.querySelector("#incomingQuantity"),
+  incomingButton: document.querySelector("#incomingButton"),
+  outgoingForm: document.querySelector("#outgoingForm"),
+  outgoingBarcode: document.querySelector("#outgoingBarcode"),
+  outgoingButton: document.querySelector("#outgoingButton"),
   status: document.querySelector("#status"),
   inventoryBody: document.querySelector("#inventoryBody"),
+  incomingLog: document.querySelector("#incomingLog"),
+  outgoingLog: document.querySelector("#outgoingLog"),
   inventoryCount: document.querySelector("#inventoryCount"),
   syncStatus: document.querySelector("#syncStatus"),
-  addProductPanel: document.querySelector("#addProductPanel"),
   inventoryPanel: document.querySelector("#inventoryPanel"),
-  lastScanPanel: document.querySelector("#lastScanPanel"),
-  unknownScanPanel: document.querySelector("#unknownScanPanel"),
-  unknownCode: document.querySelector("#unknownCode"),
-  useUnknownButton: document.querySelector("#useUnknownButton"),
+  incomingPanel: document.querySelector("#incomingPanel"),
+  outgoingPanel: document.querySelector("#outgoingPanel"),
   resetButton: document.querySelector("#resetButton"),
-  scanLog: document.querySelector("#scanLog"),
   serverNotice: document.querySelector("#serverNotice"),
 };
 
 let previousInventory = new Map();
-let scanInFlight = false;
-let lastSubmittedBarcode = "";
-let lastSubmittedAt = 0;
 
 function isFileMode() {
   return window.location.protocol === "file:";
@@ -53,6 +58,24 @@ function normalizeScan(value) {
   }
 
   return raw.replace(/[\r\n\t]/g, "").toUpperCase();
+}
+
+function getScanModeFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const mode = String(params.get("mode") || params.get("action") || "smart").toLowerCase();
+  return ["incoming", "in", "outgoing", "out"].includes(mode) ? mode : "smart";
+}
+
+function getBarcodeFromPageUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return normalizeScan(
+    params.get("barcode") ||
+      params.get("sku") ||
+      params.get("upc") ||
+      params.get("code") ||
+      params.get("product") ||
+      ""
+  );
 }
 
 async function api(path, options = {}) {
@@ -88,6 +111,13 @@ function setStatus(message, tone = "") {
   el.status.className = `status ${tone}`;
 }
 
+function money(value) {
+  return Number(value || 0).toLocaleString(undefined, {
+    style: "currency",
+    currency: "USD",
+  });
+}
+
 function flash(element, className) {
   element.classList.remove(className);
   window.requestAnimationFrame(() => {
@@ -96,13 +126,19 @@ function flash(element, className) {
   });
 }
 
+function renderState(data) {
+  renderInventory(data.inventory || []);
+  renderScanList(el.incomingLog, data.incoming || [], "No incoming scans yet.");
+  renderScanList(el.outgoingLog, data.outgoing || [], "No outgoing scans yet.");
+}
+
 function renderInventory(items) {
   el.inventoryCount.textContent = `${items.length} ${items.length === 1 ? "product" : "products"} loaded`;
 
   if (items.length === 0) {
     el.inventoryBody.innerHTML = `
       <tr>
-        <td colspan="3">No registered products loaded yet.</td>
+        <td colspan="4">No inventory yet. Scan or create an entry to start.</td>
       </tr>
     `;
     previousInventory = new Map();
@@ -115,8 +151,9 @@ function renderInventory(items) {
       const changed = previous !== undefined && previous !== item.quantity;
       return `
         <tr>
-          <td>${escapeHtml(item.name)}</td>
-          <td>${escapeHtml(item.barcode)}</td>
+          <td><code>${escapeHtml(item.barcode)}</code></td>
+          <td>${escapeHtml(item.description || item.name || "Scanned product")}</td>
+          <td>${money(item.cost)}</td>
           <td class="${changed ? "changed" : ""}">${item.quantity}</td>
         </tr>
       `;
@@ -126,28 +163,35 @@ function renderInventory(items) {
   previousInventory = new Map(items.map((item) => [item.barcode, item.quantity]));
 }
 
-function renderLog(activity) {
-  const latest = activity[0];
-  el.scanLog.textContent = latest ? `${latest.type}: ${latest.details}` : "No product scanned yet.";
-}
-
-function renderUnknownScan(barcode) {
-  if (!barcode) {
-    el.unknownScanPanel.hidden = true;
-    el.unknownCode.textContent = "";
+function renderScanList(container, entries, emptyText) {
+  const visible = entries.slice(0, 8);
+  if (visible.length === 0) {
+    container.innerHTML = `<div class="empty-state">${emptyText}</div>`;
     return;
   }
 
-  el.unknownCode.textContent = barcode;
-  el.unknownScanPanel.hidden = false;
-  flash(el.unknownScanPanel, "scan-warning");
+  container.innerHTML = visible
+    .map((entry) => {
+      return `
+        <div class="scan-entry">
+          <div>
+            <strong>${escapeHtml(entry.description || "Scanned product")}</strong>
+            <code>${escapeHtml(entry.barcode || "")}</code>
+          </div>
+          <div class="entry-meta">
+            <span>${money(entry.cost)}</span>
+            <span>Qty ${entry.quantity}</span>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
 }
 
 async function loadState() {
   try {
     const data = await api("/api/state");
-    renderInventory(data.inventory);
-    renderLog(data.activity);
+    renderState(data);
     el.syncStatus.textContent = "Inventory sync online";
   } catch (error) {
     el.syncStatus.textContent = "Inventory sync offline";
@@ -155,58 +199,40 @@ async function loadState() {
   }
 }
 
-function getBarcodeFromPageUrl() {
-  const params = new URLSearchParams(window.location.search);
-  return normalizeScan(
-    params.get("barcode") ||
-      params.get("sku") ||
-      params.get("upc") ||
-      params.get("code") ||
-      params.get("product") ||
-      ""
-  );
-}
+async function scanProduct({ barcode, mode = "smart", description = "", cost = 0, quantity = 1 }) {
+  const normalized = normalizeScan(barcode);
+  if (!normalized) return;
 
-async function scanProduct(value) {
-  const barcode = normalizeScan(value);
-  if (!barcode) return;
-  if (scanInFlight) return;
-
-  const now = Date.now();
-  if (barcode === lastSubmittedBarcode && now - lastSubmittedAt < 1800) {
-    setStatus(`${barcode} was just scanned. Duplicate ignored.`, "warn");
-    flash(el.lastScanPanel, "scan-warning");
-    return;
-  }
-
-  setStatus(`Scanned ${barcode}. Updating inventory...`);
-  scanInFlight = true;
-  lastSubmittedBarcode = barcode;
-  lastSubmittedAt = now;
+  setStatus(`Scanned ${normalized}. Updating inventory...`);
 
   try {
     const result = await api("/api/scan-product", {
       method: "POST",
-      body: JSON.stringify({ barcode }),
+      body: JSON.stringify({
+        barcode: normalized,
+        mode,
+        description,
+        cost,
+        quantity,
+      }),
     });
 
-    renderInventory(result.inventory);
-    renderLog(result.activity);
-    if (result.matched === false) {
-      renderUnknownScan(result.scannedBarcode || barcode);
-      setStatus(`${barcode} was read, but it is not registered in inventory.`, "warn");
-      flash(el.lastScanPanel, "scan-warning");
-    } else {
-      renderUnknownScan("");
-      setStatus(`${barcode} updated inventory immediately.`, "ok");
+    renderState(result);
+    if (result.mode === "incoming") {
+      setStatus(`${normalized} added to incoming inventory.`, "ok");
+      flash(el.incomingPanel, "scan-success");
       flash(el.inventoryPanel, "inventory-updated");
-      flash(el.lastScanPanel, "scan-success");
+    } else if (result.matched === false) {
+      setStatus(`${normalized} is not in inventory yet. Receive it first.`, "warn");
+      flash(el.outgoingPanel, "scan-warning");
+    } else {
+      setStatus(`${normalized} moved to outgoing inventory.`, "ok");
+      flash(el.outgoingPanel, "scan-success");
+      flash(el.inventoryPanel, "inventory-updated");
     }
   } catch (error) {
     setStatus(error.message, "warn");
-    flash(el.lastScanPanel, "scan-warning");
-  } finally {
-    scanInFlight = false;
+    flash(mode === "outgoing" || mode === "out" ? el.outgoingPanel : el.incomingPanel, "scan-warning");
   }
 }
 
@@ -214,58 +240,72 @@ async function addProduct(event) {
   event.preventDefault();
 
   const barcode = normalizeScan(el.productBarcode.value);
-  const name = el.productName.value.trim();
+  const description = el.productDescription.value.trim();
+  const cost = Number(el.productCost.value);
   const quantity = Number(el.productQuantity.value);
 
-  if (!barcode || !name || !Number.isFinite(quantity) || quantity < 0) {
-    setStatus("Enter a product name, barcode, and quantity.", "warn");
-    flash(el.addProductPanel, "scan-warning");
+  if (!barcode || !description || !Number.isFinite(cost) || !Number.isFinite(quantity) || cost < 0 || quantity < 0) {
+    setStatus("Enter barcode, description, cost, and quantity.", "warn");
+    flash(el.inventoryPanel, "scan-warning");
     return;
   }
 
   el.addProductButton.disabled = true;
-  setStatus(`Adding ${name}...`);
+  setStatus(`Creating ${description}...`);
 
   try {
     const data = await api("/api/products", {
       method: "POST",
-      body: JSON.stringify({ barcode, name, quantity }),
+      body: JSON.stringify({ barcode, description, cost, quantity }),
     });
-    renderInventory(data.inventory);
-    renderLog(data.activity);
-    renderUnknownScan("");
+    renderState(data);
     el.productForm.reset();
-    el.productQuantity.value = "5";
-    el.productName.focus();
-    setStatus(`${name} is ready to scan.`, "ok");
-    flash(el.addProductPanel, "scan-success");
-    flash(el.inventoryPanel, "inventory-updated");
+    el.productCost.value = "0";
+    el.productQuantity.value = "1";
+    el.productBarcode.focus();
+    setStatus(`${description} was added to the inventory list.`, "ok");
+    flash(el.inventoryPanel, "scan-success");
   } catch (error) {
     setStatus(error.message, "warn");
-    flash(el.addProductPanel, "scan-warning");
+    flash(el.inventoryPanel, "scan-warning");
   } finally {
     el.addProductButton.disabled = false;
   }
 }
 
+async function receiveItem(event) {
+  event.preventDefault();
+
+  await scanProduct({
+    barcode: el.incomingBarcode.value,
+    mode: "incoming",
+    description: el.incomingDescription.value,
+    cost: Number(el.incomingCost.value),
+    quantity: Number(el.incomingQuantity.value || 1),
+  });
+
+  el.incomingForm.reset();
+  el.incomingCost.value = "0";
+  el.incomingQuantity.value = "1";
+  el.incomingBarcode.focus();
+}
+
+async function sendOutItem(event) {
+  event.preventDefault();
+  await scanProduct({
+    barcode: el.outgoingBarcode.value,
+    mode: "outgoing",
+  });
+  el.outgoingForm.reset();
+  el.outgoingBarcode.focus();
+}
+
 async function resetDemo() {
   const data = await api("/api/reset", { method: "POST" });
   previousInventory = new Map();
-  renderInventory(data.inventory);
-  renderLog(data.activity);
-  renderUnknownScan("");
+  renderState(data);
   setStatus("Demo reset.", "ok");
-  el.productName.focus();
-}
-
-function useUnknownBarcode() {
-  const barcode = el.unknownCode.textContent.trim();
-  if (!barcode) return;
-
-  el.productBarcode.value = barcode;
-  el.productName.focus();
-  setStatus("Unknown barcode copied into the product form. Add a name and quantity.", "ok");
-  flash(el.addProductPanel, "scan-success");
+  el.productBarcode.focus();
 }
 
 function escapeHtml(value) {
@@ -278,8 +318,9 @@ function escapeHtml(value) {
 }
 
 el.productForm.addEventListener("submit", addProduct);
+el.incomingForm.addEventListener("submit", receiveItem);
+el.outgoingForm.addEventListener("submit", sendOutItem);
 el.resetButton.addEventListener("click", resetDemo);
-el.useUnknownButton.addEventListener("click", useUnknownBarcode);
 
 showServerNotice();
 
@@ -287,9 +328,14 @@ loadState()
   .then(() => {
     const barcodeFromUrl = getBarcodeFromPageUrl();
     if (barcodeFromUrl) {
-      scanProduct(barcodeFromUrl);
+      scanProduct({
+        barcode: barcodeFromUrl,
+        mode: getScanModeFromUrl(),
+        description: `Scanned item ${barcodeFromUrl}`,
+        quantity: 1,
+      });
       return;
     }
-    el.productName.focus();
+    el.productBarcode.focus();
   })
   .catch((error) => setStatus(error.message, "warn"));

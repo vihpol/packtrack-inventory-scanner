@@ -6,7 +6,6 @@ const crypto = require("crypto");
 const PORT = Number(process.env.PORT || 5173);
 const ROOT = __dirname;
 const DB_PATH = path.join(ROOT, "packtrack-db.json");
-const DUPLICATE_SCAN_WINDOW_MS = 1800;
 const MAX_BODY_BYTES = 1024 * 1024;
 let mutationQueue = Promise.resolve();
 
@@ -21,6 +20,8 @@ function now() {
 function starterData() {
   return {
     inventory: [],
+    incoming: [],
+    outgoing: [],
     activity: [
       {
         id: newId(),
@@ -40,7 +41,10 @@ function readDb() {
   try {
     const data = JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
     data.inventory = Array.isArray(data.inventory) ? data.inventory : [];
+    data.incoming = Array.isArray(data.incoming) ? data.incoming : [];
+    data.outgoing = Array.isArray(data.outgoing) ? data.outgoing : [];
     data.activity = Array.isArray(data.activity) ? data.activity : [];
+    data.inventory = data.inventory.map(normalizeItemShape);
     return data;
   } catch (error) {
     const backupPath = `${DB_PATH}.broken-${Date.now()}`;
@@ -111,6 +115,16 @@ function normalizeBarcode(value) {
   return raw.replace(/[\r\n\t]/g, "").toUpperCase();
 }
 
+function normalizeItemShape(item) {
+  return {
+    barcode: normalizeBarcode(item.barcode),
+    description: String(item.description || item.name || "Scanned product").trim(),
+    cost: Number.isFinite(Number(item.cost)) ? Number(item.cost) : 0,
+    quantity: Number.isFinite(Number(item.quantity)) ? Number(item.quantity) : 0,
+    aliases: Array.isArray(item.aliases) ? item.aliases.map(normalizeBarcode).filter(Boolean) : [],
+  };
+}
+
 function findInventory(data, barcode) {
   const normalized = normalizeBarcode(barcode).toLowerCase();
   return data.inventory.find((item) => {
@@ -121,89 +135,142 @@ function findInventory(data, barcode) {
   });
 }
 
-function scanProduct(data, barcode) {
+function itemLabel(item) {
+  return item.description || item.name || item.barcode;
+}
+
+function makeLogEntry(type, item, quantity, direction) {
+  return {
+    id: newId(),
+    type,
+    barcode: item.barcode,
+    description: itemLabel(item),
+    cost: item.cost,
+    quantity,
+    direction,
+    time: now(),
+  };
+}
+
+function pushActivity(data, type, details) {
+  data.activity.unshift({
+    id: newId(),
+    type,
+    details,
+    time: now(),
+  });
+}
+
+function incomingScan(data, product) {
+  const barcode = normalizeBarcode(product.barcode);
+  const quantity = Math.max(1, Number(product.quantity || 1));
+  const providedDescription = String(product.description || product.name || "").trim();
+  const providedCost = product.cost !== undefined && product.cost !== null && product.cost !== "";
+  const description = providedDescription || `Scanned item ${barcode}`;
+  const cost = providedCost && Number.isFinite(Number(product.cost)) ? Number(product.cost) : 0;
+
+  if (!barcode) {
+    throw new Error("Barcode is required");
+  }
+
+  let item = findInventory(data, barcode);
+  if (item) {
+    if (providedDescription) {
+      item.description = providedDescription;
+    }
+    if (providedCost) {
+      item.cost = cost;
+    }
+    item.quantity += quantity;
+  } else {
+    item = normalizeItemShape({ barcode, description, cost, quantity });
+    data.inventory.push(item);
+  }
+
+  const entry = makeLogEntry("Incoming scan", item, quantity, "incoming");
+  data.incoming.unshift(entry);
+  pushActivity(data, "Incoming inventory", `${itemLabel(item)} quantity increased to ${item.quantity}`);
+
+  return {
+    matched: true,
+    mode: "incoming",
+    scannedBarcode: barcode,
+  };
+}
+
+function outgoingScan(data, barcode) {
   const normalized = normalizeBarcode(barcode);
   const item = findInventory(data, normalized);
 
   if (!item) {
-    data.activity.unshift({
-      id: newId(),
-      type: "Unknown barcode read",
-      details: `${normalized || "Product"} is not registered in inventory`,
-      time: now(),
-    });
+    pushActivity(data, "Unknown outgoing scan", `${normalized || "Product"} is not in inventory`);
     return {
       matched: false,
+      mode: "outgoing",
       scannedBarcode: normalized,
     };
   }
   if (item.quantity <= 0) {
-    data.activity.unshift({
-      id: newId(),
-      type: "Rejected scan",
-      details: `${item.name} is out of stock`,
-      time: now(),
-    });
-    throw new Error(`${item.name} is out of stock`);
-  }
-
-  data.recentScans = data.recentScans || {};
-  const lastScanAt = data.recentScans[item.barcode] || 0;
-  if (Date.now() - lastScanAt < DUPLICATE_SCAN_WINDOW_MS) {
-    data.activity.unshift({
-      id: newId(),
-      type: "Duplicate ignored",
-      details: `${item.name} was just scanned`,
-      time: now(),
-    });
-    throw new Error(`${item.name} was just scanned. Duplicate ignored.`);
+    pushActivity(data, "Rejected outgoing scan", `${itemLabel(item)} is out of stock`);
+    throw new Error(`${itemLabel(item)} is out of stock`);
   }
 
   item.quantity -= 1;
-  data.recentScans[item.barcode] = Date.now();
-  data.activity.unshift({
-    id: newId(),
-    type: "Product scanned",
-    details: `${item.name} inventory reduced to ${item.quantity}`,
-    time: now(),
-  });
+  const entry = makeLogEntry("Outgoing scan", item, 1, "outgoing");
+  data.outgoing.unshift(entry);
+  pushActivity(data, "Outgoing inventory", `${itemLabel(item)} quantity reduced to ${item.quantity}`);
 
   return {
     matched: true,
+    mode: "outgoing",
     scannedBarcode: normalized,
   };
 }
 
 function addProduct(data, product) {
   const barcode = normalizeBarcode(product.barcode);
-  const name = String(product.name || "").trim();
+  const description = String(product.description || product.name || "").trim();
+  const cost = Number(product.cost || 0);
   const quantity = Number(product.quantity || 0);
   const aliases = Array.isArray(product.aliases)
     ? product.aliases.map(normalizeBarcode).filter(Boolean)
     : [];
 
-  if (!barcode || !name) {
-    throw new Error("Product barcode and name are required");
+  if (!barcode || !description) {
+    throw new Error("Product barcode and description are required");
   }
   if (!Number.isFinite(quantity) || quantity < 0) {
     throw new Error("Quantity must be 0 or higher");
   }
+  if (!Number.isFinite(cost) || cost < 0) {
+    throw new Error("Cost must be 0 or higher");
+  }
 
   const existing = findInventory(data, barcode);
   if (existing) {
-    existing.name = name;
+    existing.description = description;
+    existing.cost = cost;
     existing.quantity = quantity;
     existing.aliases = aliases;
   } else {
-    data.inventory.push({ barcode, name, quantity, aliases });
+    data.inventory.push({ barcode, description, cost, quantity, aliases });
   }
 
-  data.activity.unshift({
-    id: newId(),
-    type: "Product added",
-    details: `${name} is ready to scan`,
-    time: now(),
-  });
+  pushActivity(data, "Product added", `${description} is ready to scan`);
+}
+
+function scanProduct(data, body) {
+  const barcode = normalizeBarcode(body.barcode);
+  const mode = String(body.mode || "smart").toLowerCase();
+
+  if (mode === "incoming" || mode === "in") {
+    return incomingScan(data, body);
+  }
+  if (mode === "outgoing" || mode === "out") {
+    return outgoingScan(data, barcode);
+  }
+
+  return findInventory(data, barcode) ? outgoingScan(data, barcode) : incomingScan(data, body);
 }
 
 function runMutation(task) {
@@ -239,13 +306,13 @@ async function handleApi(req, res, url) {
     try {
       const data = await runMutation(() => {
         const nextData = readDb();
-        const scanResult = scanProduct(nextData, body.barcode);
+        const scanResult = scanProduct(nextData, body);
         writeDb(nextData);
         return Object.assign({}, nextData, scanResult);
       });
       sendJson(res, 200, data);
     } catch (error) {
-      sendError(res, error.message.includes("Duplicate ignored") ? 409 : 400, error.message);
+      sendError(res, 400, error.message);
     }
     return;
   }
