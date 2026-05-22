@@ -7,6 +7,7 @@ const PORT = Number(process.env.PORT || 5173);
 const ROOT = __dirname;
 const DB_PATH = path.join(ROOT, "packtrack-db.json");
 const DUPLICATE_SCAN_WINDOW_MS = 1800;
+const MAX_BODY_BYTES = 1024 * 1024;
 let mutationQueue = Promise.resolve();
 
 function newId() {
@@ -35,7 +36,25 @@ function readDb() {
   if (!fs.existsSync(DB_PATH)) {
     writeDb(starterData());
   }
-  return JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
+
+  try {
+    const data = JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
+    data.inventory = Array.isArray(data.inventory) ? data.inventory : [];
+    data.activity = Array.isArray(data.activity) ? data.activity : [];
+    return data;
+  } catch (error) {
+    const backupPath = `${DB_PATH}.broken-${Date.now()}`;
+    fs.copyFileSync(DB_PATH, backupPath);
+    const fresh = starterData();
+    fresh.activity.unshift({
+      id: newId(),
+      type: "Database recovered",
+      details: "Bad demo data was backed up and replaced",
+      time: now(),
+    });
+    writeDb(fresh);
+    return fresh;
+  }
 }
 
 function writeDb(data) {
@@ -56,6 +75,10 @@ function readBody(req) {
     let body = "";
     req.on("data", (chunk) => {
       body += chunk;
+      if (body.length > MAX_BODY_BYTES) {
+        reject(new Error("Request body is too large"));
+        req.destroy();
+      }
     });
     req.on("end", () => {
       try {
@@ -281,8 +304,8 @@ function serveStatic(req, res, url) {
 }
 
 const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`);
   try {
+    const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
     if (url.pathname.startsWith("/api/")) {
       await handleApi(req, res, url);
     } else {
@@ -295,4 +318,22 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Product scan demo running at http://localhost:${PORT}`);
+});
+
+server.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(`Port ${PORT} is already running. Open http://localhost:${PORT} instead of starting another server.`);
+    process.exit(0);
+  }
+
+  console.error("Server error:", error.message);
+  process.exit(1);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Unexpected server error:", error.message);
+});
+
+process.on("unhandledRejection", (error) => {
+  console.error("Unexpected async server error:", error.message || error);
 });

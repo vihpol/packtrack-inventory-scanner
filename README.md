@@ -16,6 +16,8 @@ Then open:
 http://localhost:5173
 ```
 
+If you run `npm start` again while the server is already open, the app will now tell you to use the existing `http://localhost:5173` page instead of failing with a scary port error.
+
 ## Demo Flow
 
 1. Open the app.
@@ -47,6 +49,8 @@ npx localtunnel --port 5173
 ```
 
 Use the `https://...` URL from localtunnel. When the phone opens that URL, the app can request camera permission and scans can update inventory.
+
+If localtunnel says "tunnel unavailable", the local app is usually still fine. Restart only the tunnel command and use the new HTTPS URL it prints.
 
 ## REST API
 

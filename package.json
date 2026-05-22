@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "demo": "node server.js",
     "start": "node server.js"
   },
   "dependencies": {},
