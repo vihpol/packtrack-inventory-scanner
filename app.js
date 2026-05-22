@@ -25,6 +25,7 @@ const el = {
   outgoingPanel: document.querySelector("#outgoingPanel"),
   resetButton: document.querySelector("#resetButton"),
   serverNotice: document.querySelector("#serverNotice"),
+  hero: document.querySelector(".hero"),
   dashboardView: document.querySelector("#dashboardView"),
   phoneScanner: document.querySelector("#phoneScanner"),
   phoneCameraButton: document.querySelector("#phoneCameraButton"),
@@ -423,10 +424,12 @@ el.phoneCameraButton.addEventListener("click", togglePhoneCamera);
 showServerNotice();
 
 if (isPhoneScannerView()) {
+  el.hero.hidden = true;
   el.dashboardView.hidden = true;
   el.phoneScanner.hidden = false;
   el.serverNotice.hidden = true;
 } else {
+  el.hero.hidden = false;
   el.dashboardView.hidden = false;
   el.phoneScanner.hidden = true;
 }
