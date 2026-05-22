@@ -25,9 +25,19 @@ const el = {
   outgoingPanel: document.querySelector("#outgoingPanel"),
   resetButton: document.querySelector("#resetButton"),
   serverNotice: document.querySelector("#serverNotice"),
+  dashboardView: document.querySelector("#dashboardView"),
+  phoneScanner: document.querySelector("#phoneScanner"),
+  phoneCameraButton: document.querySelector("#phoneCameraButton"),
+  phoneCameraReader: document.querySelector("#phoneCameraReader"),
+  phoneScanResult: document.querySelector("#phoneScanResult"),
 };
 
 let previousInventory = new Map();
+let phoneScanner = null;
+
+function isPhoneScannerView() {
+  return window.location.pathname === "/scanner";
+}
 
 function isFileMode() {
   return window.location.protocol === "file:";
@@ -109,6 +119,10 @@ async function api(path, options = {}) {
 function setStatus(message, tone = "") {
   el.status.textContent = message;
   el.status.className = `status ${tone}`;
+  if (isPhoneScannerView()) {
+    el.phoneScanResult.textContent = message;
+    el.phoneScanResult.className = `phone-result ${tone}`;
+  }
 }
 
 function money(value) {
@@ -251,6 +265,74 @@ async function scanProduct({ barcode, mode = "smart", description = "", cost = 0
   }
 }
 
+async function togglePhoneCamera() {
+  if (phoneScanner) {
+    await stopPhoneCamera();
+    return;
+  }
+
+  if (!window.isSecureContext || !navigator.mediaDevices) {
+    setStatus("Camera needs HTTPS. Open the localtunnel HTTPS URL on your phone.", "warn");
+    return;
+  }
+
+  if (!window.Html5Qrcode) {
+    setStatus("Camera scanner is still loading. Try again in a second.", "warn");
+    return;
+  }
+
+  try {
+    phoneScanner = new Html5Qrcode("phoneCameraReader", {
+      formatsToSupport: getSupportedPhoneFormats(),
+    });
+    el.phoneCameraButton.textContent = "Stop camera";
+    setStatus("Camera is on. Point it at a barcode or QR code.");
+
+    await phoneScanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: { width: 260, height: 220 },
+        aspectRatio: 1.333,
+      },
+      async (decodedText) => {
+        await scanProduct({
+          barcode: decodedText,
+          mode: "smart",
+          description: `Scanned item ${normalizeScan(decodedText)}`,
+          quantity: 1,
+        });
+      }
+    );
+  } catch (error) {
+    phoneScanner = null;
+    el.phoneCameraButton.textContent = "Camera";
+    setStatus("Camera permission was blocked or unavailable.", "warn");
+  }
+}
+
+async function stopPhoneCamera() {
+  if (!phoneScanner) return;
+  await phoneScanner.stop().catch(() => {});
+  phoneScanner.clear();
+  phoneScanner = null;
+  el.phoneCameraButton.textContent = "Camera";
+  setStatus("Camera stopped.");
+}
+
+function getSupportedPhoneFormats() {
+  if (!window.Html5QrcodeSupportedFormats) return undefined;
+
+  return [
+    Html5QrcodeSupportedFormats.QR_CODE,
+    Html5QrcodeSupportedFormats.CODE_128,
+    Html5QrcodeSupportedFormats.CODE_39,
+    Html5QrcodeSupportedFormats.EAN_13,
+    Html5QrcodeSupportedFormats.UPC_A,
+    Html5QrcodeSupportedFormats.UPC_E,
+  ].filter(Boolean);
+}
+
 async function addProduct(event) {
   event.preventDefault();
 
@@ -336,11 +418,25 @@ el.productForm.addEventListener("submit", addProduct);
 el.incomingForm.addEventListener("submit", receiveItem);
 el.outgoingForm.addEventListener("submit", sendOutItem);
 el.resetButton.addEventListener("click", resetDemo);
+el.phoneCameraButton.addEventListener("click", togglePhoneCamera);
 
 showServerNotice();
 
+if (isPhoneScannerView()) {
+  el.dashboardView.hidden = true;
+  el.phoneScanner.hidden = false;
+  el.serverNotice.hidden = true;
+} else {
+  el.dashboardView.hidden = false;
+  el.phoneScanner.hidden = true;
+}
+
 loadState()
   .then(() => {
+    if (isPhoneScannerView()) {
+      setStatus("Ready to scan.");
+      return;
+    }
     const barcodeFromUrl = getBarcodeFromPageUrl();
     if (barcodeFromUrl) {
       scanProduct({

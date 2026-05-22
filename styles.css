@@ -203,6 +203,59 @@ p {
   min-width: 880px;
 }
 
+.phone-scanner {
+  display: grid;
+  min-height: calc(100vh - 48px);
+  place-items: center;
+}
+
+.phone-card {
+  width: min(420px, 100%);
+  border: 1px solid rgba(116, 144, 170, 0.28);
+  border-radius: 8px;
+  padding: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.86)),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(219, 39, 119, 0.1));
+  box-shadow: 0 16px 44px rgba(26, 39, 52, 0.12);
+}
+
+.phone-card h1 {
+  margin-bottom: 16px;
+}
+
+#phoneCameraButton {
+  width: 100%;
+  min-height: 54px;
+  font-size: 1.05rem;
+}
+
+#phoneCameraReader {
+  overflow: hidden;
+  margin-top: 14px;
+  border-radius: 8px;
+}
+
+.phone-result {
+  min-height: 48px;
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--muted);
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.phone-result.ok {
+  color: var(--ok);
+}
+
+.phone-result.warn {
+  color: var(--warn);
+}
+
 .panel {
   position: relative;
   overflow: hidden;
