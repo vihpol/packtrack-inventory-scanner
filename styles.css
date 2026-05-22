@@ -196,7 +196,26 @@ p {
   object-fit: cover;
 }
 
+#cameraReader {
+  display: none;
+  width: 100%;
+  min-height: 300px;
+}
+
+#cameraReader video {
+  min-height: 300px;
+  object-fit: cover;
+}
+
 .camera-on #cameraPreview {
+  display: block;
+}
+
+.library-camera-on #cameraPreview {
+  display: none;
+}
+
+.library-camera-on #cameraReader {
   display: block;
 }
 
@@ -228,9 +247,14 @@ p {
 }
 
 .camera-on #cameraPlaceholder {
+  pointer-events: none;
   border-color: #fff;
   color: #fff;
   text-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+}
+
+.library-camera-on #cameraPlaceholder {
+  display: none;
 }
 
 form {

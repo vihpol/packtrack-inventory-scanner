@@ -28,7 +28,8 @@ http://localhost:5173
 
 - USB and Bluetooth barcode scanners work as keyboard input. Scan the product barcode and the app updates inventory when the scanner sends Enter.
 - Manual entry works for testing.
-- Camera scanning uses the browser `BarcodeDetector` API when available.
+- Camera scanning uses the browser `BarcodeDetector` API when available, with an `html5-qrcode` fallback for browsers like mobile Safari.
+- Phone browsers usually require HTTPS before they allow camera access. `http://localhost:5173` works on the same computer, but a phone opening your computer's LAN IP over plain HTTP may block the camera.
 - Phone camera testing works by scanning a QR code that opens `/scan?barcode=YOUR_REAL_BARCODE`.
 
 ## Phone Camera Test
@@ -39,13 +40,13 @@ Create a QR code whose value is:
 http://localhost:5173/scan?barcode=YOUR_REAL_BARCODE
 ```
 
-On the VM/network demo, use:
+For phone camera testing, expose the local server with an HTTPS tunnel, then open the HTTPS URL on your phone:
 
-```text
-http://192.168.1.226:5173/scan?barcode=YOUR_REAL_BARCODE
+```bash
+npx localtunnel --port 5173
 ```
 
-When the phone opens that URL, the app reads the barcode from the URL and updates inventory automatically.
+Use the `https://...` URL from localtunnel. When the phone opens that URL, the app can request camera permission and scans can update inventory.
 
 ## REST API
 

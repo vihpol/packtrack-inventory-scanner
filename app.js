@@ -16,6 +16,7 @@ const el = {
   cameraButton: document.querySelector("#cameraButton"),
   cameraPreview: document.querySelector("#cameraPreview"),
   cameraFrame: document.querySelector(".camera-frame"),
+  cameraReader: document.querySelector("#cameraReader"),
   serverNotice: document.querySelector("#serverNotice"),
 };
 
@@ -29,6 +30,7 @@ let lastSubmittedAt = 0;
 let cameraStream = null;
 let detector = null;
 let cameraActive = false;
+let webScanner = null;
 
 function isFileMode() {
   return window.location.protocol === "file:";
@@ -264,13 +266,23 @@ function scheduleInputScan() {
 }
 
 async function toggleCamera() {
-  if (cameraStream) {
-    stopCamera();
+  if (cameraStream || webScanner) {
+    await stopCamera();
+    return;
+  }
+
+  if (!window.isSecureContext || !navigator.mediaDevices) {
+    setStatus("Phone camera scanning needs HTTPS. Use an HTTPS tunnel to this app, then tap Camera again.", "warn");
+    return;
+  }
+
+  if (window.Html5Qrcode) {
+    startWebScanner();
     return;
   }
 
   if (!("BarcodeDetector" in window)) {
-    setStatus("Camera scanning is not supported here. A USB/Bluetooth scanner or manual scan still works.", "warn");
+    setStatus("This browser cannot read barcodes directly. Use Chrome/Edge, HTTPS, or a USB/Bluetooth scanner.", "warn");
     return;
   }
 
@@ -283,6 +295,7 @@ async function toggleCamera() {
     el.cameraPreview.srcObject = cameraStream;
     await el.cameraPreview.play();
     el.cameraFrame.classList.add("camera-on");
+    el.cameraButton.textContent = "Stop";
     cameraActive = true;
     detectLoop();
   } catch (error) {
@@ -290,12 +303,60 @@ async function toggleCamera() {
   }
 }
 
-function stopCamera() {
+async function startWebScanner() {
+  try {
+    webScanner = new Html5Qrcode("cameraReader", {
+      formatsToSupport: getSupportedWebScannerFormats(),
+    });
+
+    el.cameraFrame.classList.add("camera-on", "library-camera-on");
+    el.cameraButton.textContent = "Stop";
+    setStatus("Camera is on. Point it at a barcode or QR code.");
+
+    await webScanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: { width: 260, height: 180 },
+        aspectRatio: 1.777,
+      },
+      async (decodedText) => {
+        await scanProduct(decodedText);
+      }
+    );
+  } catch (error) {
+    webScanner = null;
+    el.cameraFrame.classList.remove("camera-on", "library-camera-on");
+    el.cameraButton.textContent = "Camera";
+    setStatus("Camera permission was blocked or unavailable.", "warn");
+  }
+}
+
+function getSupportedWebScannerFormats() {
+  if (!window.Html5QrcodeSupportedFormats) return undefined;
+
+  return [
+    Html5QrcodeSupportedFormats.QR_CODE,
+    Html5QrcodeSupportedFormats.CODE_128,
+    Html5QrcodeSupportedFormats.CODE_39,
+    Html5QrcodeSupportedFormats.EAN_13,
+    Html5QrcodeSupportedFormats.UPC_A,
+    Html5QrcodeSupportedFormats.UPC_E,
+  ].filter(Boolean);
+}
+
+async function stopCamera() {
   cameraActive = false;
+  if (webScanner) {
+    await webScanner.stop().catch(() => {});
+    webScanner.clear();
+    webScanner = null;
+  }
   cameraStream?.getTracks().forEach((track) => track.stop());
   cameraStream = null;
   el.cameraPreview.srcObject = null;
-  el.cameraFrame.classList.remove("camera-on");
+  el.cameraFrame.classList.remove("camera-on", "library-camera-on");
+  el.cameraButton.textContent = "Camera";
 }
 
 async function detectLoop() {

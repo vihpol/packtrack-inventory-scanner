@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Product Scan Inventory Demo</title>
     <link rel="stylesheet" href="./styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
     <script src="./app.js?v=simple-scan-demo" defer></script>
   </head>
   <body>
@@ -40,6 +41,7 @@
 
           <div class="camera-frame">
             <video id="cameraPreview" playsinline muted></video>
+            <div id="cameraReader"></div>
             <div id="cameraPlaceholder">
               <span class="scan-beam"></span>
               <strong>Scan product barcode</strong>
