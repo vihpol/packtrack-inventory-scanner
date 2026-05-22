@@ -118,6 +118,20 @@ function money(value) {
   });
 }
 
+function scannedAt(value) {
+  if (!value) return "Scanned just now";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Scanned just now";
+
+  return `Scanned ${date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  })}`;
+}
+
 function flash(element, className) {
   element.classList.remove(className);
   window.requestAnimationFrame(() => {
@@ -178,6 +192,7 @@ function renderScanList(container, entries, emptyText) {
             <strong>${escapeHtml(entry.description || "Scanned product")}</strong>
             <code>${escapeHtml(entry.barcode || "")}</code>
           </div>
+          <div class="scan-date">${escapeHtml(scannedAt(entry.time))}</div>
           <div class="entry-meta">
             <span>${money(entry.cost)}</span>
             <span>Qty ${entry.quantity}</span>

@@ -32,6 +32,7 @@ If you run `npm start` again while the server is already open, the app will now 
 - Use the Create entry form to manually add barcode, description, cost, and quantity.
 - Use the Incoming inventory form to receive new or existing products.
 - Use the Outgoing inventory form to sell, ship, or return existing products.
+- Incoming and outgoing logs show when each scan happened.
 - Phone camera testing works by scanning a QR code that opens `/scan?barcode=YOUR_REAL_BARCODE`.
 - You can force a phone scan direction with `/scan?mode=incoming&barcode=...` or `/scan?mode=outgoing&barcode=...`.
 

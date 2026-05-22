@@ -319,6 +319,12 @@ tbody tr:hover {
   font-size: 0.84rem;
 }
 
+.scan-date {
+  color: #6b7b8b;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
 .entry-meta {
   display: flex;
   justify-content: space-between;
