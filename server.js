@@ -105,11 +105,14 @@ function scanProduct(data, barcode) {
   if (!item) {
     data.activity.unshift({
       id: newId(),
-      type: "Rejected scan",
-      details: `${normalized || "Product"} is not registered`,
+      type: "Unknown barcode read",
+      details: `${normalized || "Product"} is not registered in inventory`,
       time: now(),
     });
-    throw new Error(`${normalized || "Product"} was not found in inventory`);
+    return {
+      matched: false,
+      scannedBarcode: normalized,
+    };
   }
   if (item.quantity <= 0) {
     data.activity.unshift({
@@ -141,6 +144,11 @@ function scanProduct(data, barcode) {
     details: `${item.name} inventory reduced to ${item.quantity}`,
     time: now(),
   });
+
+  return {
+    matched: true,
+    scannedBarcode: normalized,
+  };
 }
 
 function addProduct(data, product) {
@@ -208,9 +216,9 @@ async function handleApi(req, res, url) {
     try {
       const data = await runMutation(() => {
         const nextData = readDb();
-        scanProduct(nextData, body.barcode);
+        const scanResult = scanProduct(nextData, body.barcode);
         writeDb(nextData);
-        return nextData;
+        return Object.assign({}, nextData, scanResult);
       });
       sendJson(res, 200, data);
     } catch (error) {

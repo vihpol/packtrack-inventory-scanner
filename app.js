@@ -9,6 +9,8 @@ const el = {
   scannerPanel: document.querySelector("#scannerPanel"),
   inventoryPanel: document.querySelector("#inventoryPanel"),
   lastScanPanel: document.querySelector("#lastScanPanel"),
+  unknownScanPanel: document.querySelector("#unknownScanPanel"),
+  unknownCode: document.querySelector("#unknownCode"),
   resetButton: document.querySelector("#resetButton"),
   scanLog: document.querySelector("#scanLog"),
   cameraButton: document.querySelector("#cameraButton"),
@@ -119,6 +121,18 @@ function renderLog(activity) {
   el.scanLog.textContent = latest ? `${latest.type}: ${latest.details}` : "No product scanned yet.";
 }
 
+function renderUnknownScan(barcode) {
+  if (!barcode) {
+    el.unknownScanPanel.hidden = true;
+    el.unknownCode.textContent = "";
+    return;
+  }
+
+  el.unknownCode.textContent = barcode;
+  el.unknownScanPanel.hidden = false;
+  flash(el.unknownScanPanel, "scan-warning");
+}
+
 async function loadState() {
   try {
     const data = await api("/api/state");
@@ -164,10 +178,17 @@ async function scanProduct(value) {
 
     renderInventory(result.inventory);
     renderLog(result.activity);
-    setStatus(`${barcode} updated inventory immediately.`, "ok");
-    flash(el.scannerPanel, "scan-success");
-    flash(el.inventoryPanel, "inventory-updated");
-    flash(el.lastScanPanel, "scan-success");
+    if (result.matched === false) {
+      renderUnknownScan(result.scannedBarcode || barcode);
+      setStatus(`${barcode} was read, but it is not registered in inventory.`, "warn");
+      flash(el.scannerPanel, "scan-warning");
+    } else {
+      renderUnknownScan("");
+      setStatus(`${barcode} updated inventory immediately.`, "ok");
+      flash(el.scannerPanel, "scan-success");
+      flash(el.inventoryPanel, "inventory-updated");
+      flash(el.lastScanPanel, "scan-success");
+    }
     el.scanInput.value = "";
     el.scanInput.focus();
   } catch (error) {
@@ -186,6 +207,7 @@ async function resetDemo() {
   previousInventory = new Map();
   renderInventory(data.inventory);
   renderLog(data.activity);
+  renderUnknownScan("");
   el.scanInput.value = "";
   setStatus("Demo reset.", "ok");
   el.scanInput.focus();

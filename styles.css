@@ -320,6 +320,26 @@ tbody tr:hover {
   font-weight: 750;
 }
 
+.unknown-panel {
+  border-color: rgba(180, 83, 9, 0.3);
+}
+
+.unknown-panel p {
+  margin-bottom: 12px;
+}
+
+.unknown-panel code {
+  display: block;
+  overflow-wrap: anywhere;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff8ed;
+  color: #9a3412;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
 .scan-success {
   border-color: rgba(21, 128, 61, 0.4);
   box-shadow: 0 18px 42px rgba(21, 128, 61, 0.12);
