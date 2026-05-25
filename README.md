@@ -18,6 +18,31 @@ http://localhost:5173
 
 If you run `npm start` again while the server is already open, the app will now tell you to use the existing `http://localhost:5173` page instead of failing with a scary port error.
 
+## Run as a Mac Server
+
+Install the macOS LaunchAgent once:
+
+```bash
+mkdir -p ~/Library/LaunchAgents
+cp mac/com.vihpol.scandemo.plist ~/Library/LaunchAgents/
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.vihpol.scandemo.plist
+launchctl kickstart -k gui/$(id -u)/com.vihpol.scandemo
+```
+
+After that, the Mac starts the server automatically when you log in. The Mac dashboard is:
+
+```text
+http://localhost:5173
+```
+
+The phone client can use your Mac's local network address:
+
+```text
+http://YOUR_MAC_IP:5173/scanner
+```
+
+Phone camera scanning may still require HTTPS, depending on the phone browser. For camera access, use an HTTPS tunnel or deploy the app with HTTPS.
+
 ## Demo Flow
 
 1. Open the app.
