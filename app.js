@@ -27,7 +27,16 @@ const el = {
   serverNotice: document.querySelector("#serverNotice"),
   dashboardShell: document.querySelector("#dashboardShell"),
   hero: document.querySelector(".hero"),
+  analyticsPanel: document.querySelector("#analyticsPanel"),
   dashboardView: document.querySelector("#dashboardView"),
+  stockValueMetric: document.querySelector("#stockValueMetric"),
+  unitsOnHandMetric: document.querySelector("#unitsOnHandMetric"),
+  receivedUnitsMetric: document.querySelector("#receivedUnitsMetric"),
+  deployedUnitsMetric: document.querySelector("#deployedUnitsMetric"),
+  movementBalanceMetric: document.querySelector("#movementBalanceMetric"),
+  scanActivityMetric: document.querySelector("#scanActivityMetric"),
+  receivedBar: document.querySelector("#receivedBar"),
+  deployedBar: document.querySelector("#deployedBar"),
   workbookTitle: document.querySelector("#workbookTitle"),
   workbookDescription: document.querySelector("#workbookDescription"),
   navButtons: Array.from(document.querySelectorAll("[data-view]")),
@@ -206,9 +215,38 @@ function flash(element, className) {
 }
 
 function renderState(data) {
+  renderAnalytics(data);
   renderInventory(data.inventory || []);
   renderScanList(el.incomingLog, data.incoming || [], "No received network hardware yet.");
   renderScanList(el.outgoingLog, data.outgoing || [], "No deployed or returned hardware yet.");
+}
+
+function entryUnits(entries) {
+  return entries.reduce((sum, entry) => sum + Number(entry.quantity || 0), 0);
+}
+
+function renderAnalytics(data) {
+  const inventory = data.inventory || [];
+  const incoming = data.incoming || [];
+  const outgoing = data.outgoing || [];
+  const stockValue = inventory.reduce((sum, item) => sum + itemValue(item), 0);
+  const unitsOnHand = inventory.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const receivedUnits = entryUnits(incoming);
+  const deployedUnits = entryUnits(outgoing);
+  const balance = receivedUnits - deployedUnits;
+  const totalMovement = Math.max(receivedUnits + deployedUnits, 1);
+  const receivedWidth = Math.max(4, Math.round((receivedUnits / totalMovement) * 100));
+  const deployedWidth = Math.max(4, Math.round((deployedUnits / totalMovement) * 100));
+  const scanEvents = incoming.length + outgoing.length;
+
+  el.stockValueMetric.textContent = money(stockValue);
+  el.unitsOnHandMetric.textContent = unitsOnHand.toLocaleString();
+  el.receivedUnitsMetric.textContent = receivedUnits.toLocaleString();
+  el.deployedUnitsMetric.textContent = deployedUnits.toLocaleString();
+  el.movementBalanceMetric.textContent = `${balance >= 0 ? "+" : ""}${balance.toLocaleString()} units`;
+  el.scanActivityMetric.textContent = `${scanEvents.toLocaleString()} scan ${scanEvents === 1 ? "event" : "events"} logged`;
+  el.receivedBar.style.width = `${receivedWidth}%`;
+  el.deployedBar.style.width = `${deployedWidth}%`;
 }
 
 function renderInventory(items) {
@@ -487,6 +525,7 @@ if (isPhoneScannerView()) {
   document.body.classList.add("scanner-page");
   el.dashboardShell.classList.add("scanner-only");
   el.hero.hidden = true;
+  el.analyticsPanel.hidden = true;
   el.dashboardView.hidden = true;
   el.phoneScanner.hidden = false;
   el.serverNotice.hidden = true;
@@ -494,6 +533,7 @@ if (isPhoneScannerView()) {
   document.body.classList.remove("scanner-page");
   el.dashboardShell.classList.remove("scanner-only");
   el.hero.hidden = false;
+  el.analyticsPanel.hidden = false;
   el.dashboardView.hidden = false;
   el.phoneScanner.hidden = true;
   setDashboardView(window.location.hash.replace("#", ""));

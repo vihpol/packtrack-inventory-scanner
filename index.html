@@ -67,6 +67,40 @@
           </div>
         </section>
 
+        <section id="analyticsPanel" class="analytics-panel" aria-label="Inventory productivity analytics">
+          <div class="metric-card">
+            <span>Stock value</span>
+            <strong id="stockValueMetric">$0.00</strong>
+            <small>Current on-hand value</small>
+          </div>
+          <div class="metric-card">
+            <span>Units on hand</span>
+            <strong id="unitsOnHandMetric">0</strong>
+            <small>Available hardware units</small>
+          </div>
+          <div class="metric-card">
+            <span>Received units</span>
+            <strong id="receivedUnitsMetric">0</strong>
+            <small>Total inbound movement</small>
+          </div>
+          <div class="metric-card">
+            <span>Deployed / returned</span>
+            <strong id="deployedUnitsMetric">0</strong>
+            <small>Total outbound movement</small>
+          </div>
+          <div class="metric-card wide">
+            <div>
+              <span>Movement balance</span>
+              <strong id="movementBalanceMetric">+0 units</strong>
+              <small id="scanActivityMetric">0 scan events logged</small>
+            </div>
+            <div class="throughput-bars" aria-hidden="true">
+              <span id="receivedBar"></span>
+              <span id="deployedBar"></span>
+            </div>
+          </div>
+        </section>
+
       <section id="phoneScanner" class="phone-scanner" hidden>
         <div class="phone-card">
           <img class="phone-logo" src="./assets/micas-networks-logo.png" alt="Micas Networks" />

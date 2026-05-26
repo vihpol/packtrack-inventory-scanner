@@ -90,6 +90,7 @@ code {
   grid-template-columns: 240px minmax(0, 1fr);
   grid-template-areas:
     "sidebar hero"
+    "sidebar analytics"
     "sidebar workbook";
   gap: 16px;
   align-items: start;
@@ -355,6 +356,77 @@ p {
 
 .switch-face i:nth-of-type(4) {
   animation-delay: 1.55s;
+}
+
+.analytics-panel {
+  grid-area: analytics;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(260px, 1.25fr);
+  gap: 12px;
+}
+
+.metric-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 118px;
+  border: 1px solid rgba(0, 137, 159, 0.18);
+  border-radius: 8px;
+  padding: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 251, 251, 0.9)),
+    linear-gradient(135deg, rgba(0, 191, 195, 0.12), rgba(255, 183, 27, 0.08));
+  box-shadow: 0 14px 32px rgba(6, 50, 61, 0.08);
+}
+
+.metric-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--blue), var(--accent));
+}
+
+.metric-card span,
+.metric-card small {
+  display: block;
+  color: #61727a;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.metric-card strong {
+  display: block;
+  margin: 12px 0 6px;
+  color: #10252c;
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.metric-card.wide {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: space-between;
+}
+
+.throughput-bars {
+  display: flex;
+  overflow: hidden;
+  height: 12px;
+  border-radius: 999px;
+  background: #dfecee;
+}
+
+.throughput-bars span {
+  height: 100%;
+}
+
+#receivedBar {
+  background: linear-gradient(90deg, var(--primary), var(--blue));
+}
+
+#deployedBar {
+  background: linear-gradient(90deg, var(--accent), #f97316);
 }
 
 .server-notice {
@@ -892,6 +964,14 @@ tbody tr:hover {
 }
 
 @media (max-width: 900px) {
+  .analytics-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metric-card.wide {
+    grid-column: 1 / -1;
+  }
+
   .sheet-board {
     min-width: 0;
   }
@@ -926,6 +1006,7 @@ tbody tr:hover {
     grid-template-areas:
       "sidebar"
       "hero"
+      "analytics"
       "workbook";
   }
 
