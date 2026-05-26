@@ -6,7 +6,7 @@
     <title>Micas Network Inventory</title>
     <link rel="stylesheet" href="./styles.css" />
     <script src="./vendor/html5-qrcode.min.js" defer></script>
-    <script src="./app.js?v=micas-network-inventory" defer></script>
+    <script src="./app.js?v=micas-clean-inventory" defer></script>
   </head>
   <body>
     <main class="page">
@@ -18,7 +18,7 @@
             </span>
             <div>
               <h1>Inventory</h1>
-              <p>Network hardware demo</p>
+              <p>Network hardware</p>
             </div>
           </div>
 
@@ -28,19 +28,6 @@
             <button type="button" data-view="outgoing">Deploy / return</button>
           </nav>
 
-          <div class="sidebar-status">
-            <div>
-              <span class="status-dot"></span>
-              Network console ready
-            </div>
-            <div id="syncStatus">Checking inventory sync</div>
-            <div id="inventoryCount">0 products loaded</div>
-          </div>
-
-          <div id="serverNotice" class="server-notice" hidden>
-            Open this demo at <a href="http://localhost:5173">http://localhost:5173</a> so scans can update inventory.
-          </div>
-          <div id="status" class="status">Ready for a scan.</div>
         </aside>
 
         <section class="hero">
@@ -49,7 +36,7 @@
             <p class="intro">
               Scan labels for switches, routing gear, optics, and data-center accessories to track stock, receiving, deployments, and returns.
             </p>
-            <div class="equipment-tags" aria-label="Supported demo equipment">
+            <div class="equipment-tags" aria-label="Supported equipment">
               <span>SONiC switches</span>
               <span>1G-800G platforms</span>
               <span>Optical modules</span>
@@ -64,40 +51,6 @@
               <i></i><i></i><i></i><i></i>
             </div>
             <p>Open networking intake</p>
-          </div>
-        </section>
-
-        <section id="analyticsPanel" class="analytics-panel" aria-label="Inventory productivity analytics">
-          <div class="metric-card">
-            <span>Stock value</span>
-            <strong id="stockValueMetric">$0.00</strong>
-            <small>Current on-hand value</small>
-          </div>
-          <div class="metric-card">
-            <span>Units on hand</span>
-            <strong id="unitsOnHandMetric">0</strong>
-            <small>Available hardware units</small>
-          </div>
-          <div class="metric-card">
-            <span>Received units</span>
-            <strong id="receivedUnitsMetric">0</strong>
-            <small>Total inbound movement</small>
-          </div>
-          <div class="metric-card">
-            <span>Deployed / returned</span>
-            <strong id="deployedUnitsMetric">0</strong>
-            <small>Total outbound movement</small>
-          </div>
-          <div class="metric-card wide">
-            <div>
-              <span>Movement balance</span>
-              <strong id="movementBalanceMetric">+0 units</strong>
-              <small id="scanActivityMetric">0 scan events logged</small>
-            </div>
-            <div class="throughput-bars" aria-hidden="true">
-              <span id="receivedBar"></span>
-              <span id="deployedBar"></span>
-            </div>
           </div>
         </section>
 
@@ -126,38 +79,28 @@
             <h2 id="workbookTitle">Hardware stock</h2>
             <p id="workbookDescription">Rack-ready network equipment currently on hand.</p>
           </div>
-          <button id="resetButton" type="button">Reset</button>
         </div>
 
         <article id="inventoryPanel" class="sheet-section" data-view-panel="inventory">
-          <h3>Hardware stock</h3>
-          <form id="productForm">
-            <div class="table-wrap">
-              <table class="sheet-table">
-                <thead>
-                  <tr>
-                    <th>Serial / Asset tag</th>
-                    <th>Hardware type / model / configuration</th>
-                    <th>Cost</th>
-                    <th>Units</th>
-                    <th>Value</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr class="entry-row">
-                    <td><input id="productBarcode" autocomplete="off" placeholder="Scan equipment label" required /></td>
-                    <td><input id="productDescription" autocomplete="off" placeholder="Switch, router, optic, speed, OS, site" required /></td>
-                    <td><input id="productCost" type="number" min="0" step="0.01" value="0" required /></td>
-                    <td><input id="productQuantity" type="number" min="0" step="1" value="1" required /></td>
-                    <td class="formula-cell">Auto</td>
-                    <td><button id="addProductButton" type="submit">Create</button></td>
-                  </tr>
-                </tbody>
-                <tbody id="inventoryBody"></tbody>
-              </table>
-            </div>
-          </form>
+          <div class="section-heading">
+            <h3>Hardware stock</h3>
+            <button id="openEntryModalButton" type="button">Add entry</button>
+          </div>
+          <div class="table-wrap">
+            <table class="sheet-table">
+              <thead>
+                <tr>
+                  <th>Serial / Asset tag</th>
+                  <th>Hardware type / model / configuration</th>
+                  <th>Cost</th>
+                  <th>Units</th>
+                  <th>Value</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryBody"></tbody>
+            </table>
+          </div>
         </article>
 
         <article id="incomingPanel" class="sheet-section" data-view-panel="incoming" hidden>
@@ -226,6 +169,40 @@
           </form>
         </article>
       </section>
+      </div>
+
+      <div id="entryModal" class="modal-backdrop" hidden>
+        <section class="entry-modal" role="dialog" aria-modal="true" aria-labelledby="entryModalTitle">
+          <div class="modal-heading">
+            <div>
+              <h2 id="entryModalTitle">Add inventory entry</h2>
+              <p>Add a hardware item to the inventory list.</p>
+            </div>
+            <button id="closeEntryModalButton" class="ghost-button" type="button" aria-label="Close">Close</button>
+          </div>
+          <form id="productForm" class="modal-form">
+            <label>
+              Serial / Asset tag
+              <input id="productBarcode" autocomplete="off" placeholder="Scan equipment label" required />
+            </label>
+            <label>
+              Hardware type / model / configuration
+              <input id="productDescription" autocomplete="off" placeholder="Switch, router, optic, speed, OS, site" required />
+            </label>
+            <label>
+              Cost
+              <input id="productCost" type="number" min="0" step="0.01" value="0" required />
+            </label>
+            <label>
+              Units
+              <input id="productQuantity" type="number" min="0" step="1" value="1" required />
+            </label>
+            <div class="modal-actions">
+              <button id="cancelEntryModalButton" class="ghost-button" type="button">Cancel</button>
+              <button id="addProductButton" type="submit">Add entry</button>
+            </div>
+          </form>
+        </section>
       </div>
     </main>
   </body>

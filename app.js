@@ -5,6 +5,10 @@ const el = {
   productCost: document.querySelector("#productCost"),
   productQuantity: document.querySelector("#productQuantity"),
   addProductButton: document.querySelector("#addProductButton"),
+  openEntryModalButton: document.querySelector("#openEntryModalButton"),
+  closeEntryModalButton: document.querySelector("#closeEntryModalButton"),
+  cancelEntryModalButton: document.querySelector("#cancelEntryModalButton"),
+  entryModal: document.querySelector("#entryModal"),
   incomingForm: document.querySelector("#incomingForm"),
   incomingBarcode: document.querySelector("#incomingBarcode"),
   incomingDescription: document.querySelector("#incomingDescription"),
@@ -18,25 +22,12 @@ const el = {
   inventoryBody: document.querySelector("#inventoryBody"),
   incomingLog: document.querySelector("#incomingLog"),
   outgoingLog: document.querySelector("#outgoingLog"),
-  inventoryCount: document.querySelector("#inventoryCount"),
-  syncStatus: document.querySelector("#syncStatus"),
   inventoryPanel: document.querySelector("#inventoryPanel"),
   incomingPanel: document.querySelector("#incomingPanel"),
   outgoingPanel: document.querySelector("#outgoingPanel"),
-  resetButton: document.querySelector("#resetButton"),
-  serverNotice: document.querySelector("#serverNotice"),
   dashboardShell: document.querySelector("#dashboardShell"),
   hero: document.querySelector(".hero"),
-  analyticsPanel: document.querySelector("#analyticsPanel"),
   dashboardView: document.querySelector("#dashboardView"),
-  stockValueMetric: document.querySelector("#stockValueMetric"),
-  unitsOnHandMetric: document.querySelector("#unitsOnHandMetric"),
-  receivedUnitsMetric: document.querySelector("#receivedUnitsMetric"),
-  deployedUnitsMetric: document.querySelector("#deployedUnitsMetric"),
-  movementBalanceMetric: document.querySelector("#movementBalanceMetric"),
-  scanActivityMetric: document.querySelector("#scanActivityMetric"),
-  receivedBar: document.querySelector("#receivedBar"),
-  deployedBar: document.querySelector("#deployedBar"),
   workbookTitle: document.querySelector("#workbookTitle"),
   workbookDescription: document.querySelector("#workbookDescription"),
   navButtons: Array.from(document.querySelectorAll("[data-view]")),
@@ -76,9 +67,7 @@ function isFileMode() {
 
 function showServerNotice() {
   if (!isFileMode()) return;
-  el.serverNotice.hidden = false;
   setStatus("This page was opened as a file. Open http://localhost:5173 so scans can update inventory.", "warn");
-  el.syncStatus.textContent = "Inventory sync offline";
 }
 
 function setDashboardView(view) {
@@ -173,8 +162,10 @@ async function api(path, options = {}) {
 }
 
 function setStatus(message, tone = "") {
-  el.status.textContent = message;
-  el.status.className = `status ${tone}`;
+  if (el.status) {
+    el.status.textContent = message;
+    el.status.className = `status ${tone}`;
+  }
   if (isPhoneScannerView()) {
     el.phoneScanResult.textContent = message;
     el.phoneScanResult.className = `phone-result ${tone}`;
@@ -215,43 +206,12 @@ function flash(element, className) {
 }
 
 function renderState(data) {
-  renderAnalytics(data);
   renderInventory(data.inventory || []);
   renderScanList(el.incomingLog, data.incoming || [], "No received network hardware yet.");
   renderScanList(el.outgoingLog, data.outgoing || [], "No deployed or returned hardware yet.");
 }
 
-function entryUnits(entries) {
-  return entries.reduce((sum, entry) => sum + Number(entry.quantity || 0), 0);
-}
-
-function renderAnalytics(data) {
-  const inventory = data.inventory || [];
-  const incoming = data.incoming || [];
-  const outgoing = data.outgoing || [];
-  const stockValue = inventory.reduce((sum, item) => sum + itemValue(item), 0);
-  const unitsOnHand = inventory.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
-  const receivedUnits = entryUnits(incoming);
-  const deployedUnits = entryUnits(outgoing);
-  const balance = receivedUnits - deployedUnits;
-  const totalMovement = Math.max(receivedUnits + deployedUnits, 1);
-  const receivedWidth = Math.max(4, Math.round((receivedUnits / totalMovement) * 100));
-  const deployedWidth = Math.max(4, Math.round((deployedUnits / totalMovement) * 100));
-  const scanEvents = incoming.length + outgoing.length;
-
-  el.stockValueMetric.textContent = money(stockValue);
-  el.unitsOnHandMetric.textContent = unitsOnHand.toLocaleString();
-  el.receivedUnitsMetric.textContent = receivedUnits.toLocaleString();
-  el.deployedUnitsMetric.textContent = deployedUnits.toLocaleString();
-  el.movementBalanceMetric.textContent = `${balance >= 0 ? "+" : ""}${balance.toLocaleString()} units`;
-  el.scanActivityMetric.textContent = `${scanEvents.toLocaleString()} scan ${scanEvents === 1 ? "event" : "events"} logged`;
-  el.receivedBar.style.width = `${receivedWidth}%`;
-  el.deployedBar.style.width = `${deployedWidth}%`;
-}
-
 function renderInventory(items) {
-  el.inventoryCount.textContent = `${items.length} ${items.length === 1 ? "hardware item" : "hardware items"} loaded`;
-
   if (items.length === 0) {
     el.inventoryBody.innerHTML = `
       <tr>
@@ -273,7 +233,7 @@ function renderInventory(items) {
           <td>${money(item.cost)}</td>
           <td class="${changed ? "changed" : ""}">${item.quantity}</td>
           <td>${money(itemValue(item))}</td>
-          <td></td>
+          <td><button class="delete-button" type="button" data-delete-barcode="${escapeHtml(item.barcode)}">Delete</button></td>
         </tr>
       `;
     })
@@ -314,9 +274,7 @@ async function loadState() {
   try {
     const data = await api("/api/state");
     renderState(data);
-    el.syncStatus.textContent = "Inventory sync online";
   } catch (error) {
-    el.syncStatus.textContent = "Inventory sync offline";
     throw error;
   }
 }
@@ -455,7 +413,7 @@ async function addProduct(event) {
     el.productForm.reset();
     el.productCost.value = "0";
     el.productQuantity.value = "1";
-    el.productBarcode.focus();
+    closeEntryModal();
     setStatus(`${description} was added to hardware stock.`, "ok");
     flash(el.inventoryPanel, "scan-success");
   } catch (error) {
@@ -464,6 +422,37 @@ async function addProduct(event) {
   } finally {
     el.addProductButton.disabled = false;
   }
+}
+
+async function deleteProduct(barcode) {
+  const normalized = normalizeScan(barcode);
+  if (!normalized) return;
+
+  try {
+    const data = await api(`/api/products/${encodeURIComponent(normalized)}`, { method: "DELETE" });
+    previousInventory.delete(normalized);
+    renderState(data);
+    setStatus(`${normalized} was deleted.`, "ok");
+    flash(el.inventoryPanel, "scan-success");
+  } catch (error) {
+    setStatus(error.message, "warn");
+    flash(el.inventoryPanel, "scan-warning");
+  }
+}
+
+function openEntryModal() {
+  el.entryModal.hidden = false;
+  el.productBarcode.focus();
+}
+
+function closeEntryModal() {
+  el.entryModal.hidden = true;
+}
+
+function handleInventoryClick(event) {
+  const deleteButton = event.target.closest("[data-delete-barcode]");
+  if (!deleteButton) return;
+  deleteProduct(deleteButton.dataset.deleteBarcode);
 }
 
 async function receiveItem(event) {
@@ -493,14 +482,6 @@ async function sendOutItem(event) {
   el.outgoingBarcode.focus();
 }
 
-async function resetDemo() {
-  const data = await api("/api/reset", { method: "POST" });
-  previousInventory = new Map();
-  renderState(data);
-  setStatus("Demo reset.", "ok");
-  el.productBarcode.focus();
-}
-
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -513,7 +494,13 @@ function escapeHtml(value) {
 el.productForm.addEventListener("submit", addProduct);
 el.incomingForm.addEventListener("submit", receiveItem);
 el.outgoingForm.addEventListener("submit", sendOutItem);
-el.resetButton.addEventListener("click", resetDemo);
+el.inventoryBody.addEventListener("click", handleInventoryClick);
+el.openEntryModalButton.addEventListener("click", openEntryModal);
+el.closeEntryModalButton.addEventListener("click", closeEntryModal);
+el.cancelEntryModalButton.addEventListener("click", closeEntryModal);
+el.entryModal.addEventListener("click", (event) => {
+  if (event.target === el.entryModal) closeEntryModal();
+});
 el.phoneCameraButton.addEventListener("click", togglePhoneCamera);
 el.navButtons.forEach((button) => {
   button.addEventListener("click", () => setDashboardView(button.dataset.view));
@@ -525,15 +512,12 @@ if (isPhoneScannerView()) {
   document.body.classList.add("scanner-page");
   el.dashboardShell.classList.add("scanner-only");
   el.hero.hidden = true;
-  el.analyticsPanel.hidden = true;
   el.dashboardView.hidden = true;
   el.phoneScanner.hidden = false;
-  el.serverNotice.hidden = true;
 } else {
   document.body.classList.remove("scanner-page");
   el.dashboardShell.classList.remove("scanner-only");
   el.hero.hidden = false;
-  el.analyticsPanel.hidden = false;
   el.dashboardView.hidden = false;
   el.phoneScanner.hidden = true;
   setDashboardView(window.location.hash.replace("#", ""));

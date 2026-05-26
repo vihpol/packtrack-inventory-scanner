@@ -90,7 +90,6 @@ code {
   grid-template-columns: 240px minmax(0, 1fr);
   grid-template-areas:
     "sidebar hero"
-    "sidebar analytics"
     "sidebar workbook";
   gap: 16px;
   align-items: start;
@@ -358,77 +357,6 @@ p {
   animation-delay: 1.55s;
 }
 
-.analytics-panel {
-  grid-area: analytics;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(260px, 1.25fr);
-  gap: 12px;
-}
-
-.metric-card {
-  position: relative;
-  overflow: hidden;
-  min-height: 118px;
-  border: 1px solid rgba(0, 137, 159, 0.18);
-  border-radius: 8px;
-  padding: 14px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 251, 251, 0.9)),
-    linear-gradient(135deg, rgba(0, 191, 195, 0.12), rgba(255, 183, 27, 0.08));
-  box-shadow: 0 14px 32px rgba(6, 50, 61, 0.08);
-}
-
-.metric-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: 4px;
-  background: linear-gradient(90deg, var(--primary), var(--blue), var(--accent));
-}
-
-.metric-card span,
-.metric-card small {
-  display: block;
-  color: #61727a;
-  font-size: 0.72rem;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.metric-card strong {
-  display: block;
-  margin: 12px 0 6px;
-  color: #10252c;
-  font-size: 1.55rem;
-  line-height: 1;
-}
-
-.metric-card.wide {
-  display: grid;
-  grid-template-columns: 1fr;
-  align-content: space-between;
-}
-
-.throughput-bars {
-  display: flex;
-  overflow: hidden;
-  height: 12px;
-  border-radius: 999px;
-  background: #dfecee;
-}
-
-.throughput-bars span {
-  height: 100%;
-}
-
-#receivedBar {
-  background: linear-gradient(90deg, var(--primary), var(--blue));
-}
-
-#deployedBar {
-  background: linear-gradient(90deg, var(--accent), #f97316);
-}
-
 .server-notice {
   margin-bottom: 14px;
   border: 1px solid #fed7aa;
@@ -504,6 +432,23 @@ p {
 
 .sheet-toolbar p {
   margin-bottom: 0;
+}
+
+.section-heading,
+.modal-heading,
+.modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-heading {
+  margin-bottom: 14px;
+}
+
+.section-heading h3 {
+  margin: 0;
 }
 
 .phone-scanner {
@@ -775,6 +720,90 @@ td code {
   min-height: 34px;
 }
 
+.delete-button {
+  min-height: 32px;
+  border: 1px solid rgba(180, 83, 9, 0.26);
+  background: #fff7ed;
+  color: #9a3412;
+  box-shadow: none;
+}
+
+.delete-button:hover {
+  background: #ffedd5;
+  color: #7c2d12;
+  box-shadow: 0 8px 18px rgba(180, 83, 9, 0.12);
+}
+
+.ghost-button {
+  border: 1px solid #cfe2e5;
+  background: #fff;
+  color: #254b55;
+  box-shadow: none;
+}
+
+.ghost-button:hover {
+  background: #edfbfb;
+  color: #0b7382;
+  box-shadow: 0 8px 18px rgba(0, 137, 159, 0.12);
+}
+
+.modal-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  padding: 20px;
+  background: rgba(7, 21, 28, 0.58);
+  place-items: center;
+}
+
+.entry-modal {
+  width: min(640px, 100%);
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  border: 1px solid rgba(0, 191, 195, 0.22);
+  border-radius: 8px;
+  padding: 18px;
+  background: #fff;
+  box-shadow: 0 30px 80px rgba(7, 21, 28, 0.32);
+}
+
+.modal-heading {
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 14px;
+}
+
+.modal-heading h2 {
+  margin: 0 0 4px;
+}
+
+.modal-heading p {
+  margin: 0;
+}
+
+.modal-form {
+  display: grid;
+  gap: 12px;
+}
+
+.modal-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.modal-form input {
+  min-height: 42px;
+  border-color: #cfe2e5;
+  border-radius: 6px;
+  background: #f7fcfc;
+}
+
+.modal-actions {
+  margin-top: 6px;
+  justify-content: flex-end;
+}
+
 .formula-cell {
   color: #7a8795;
   font-size: 0.84rem;
@@ -964,14 +993,6 @@ tbody tr:hover {
 }
 
 @media (max-width: 900px) {
-  .analytics-panel {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .metric-card.wide {
-    grid-column: 1 / -1;
-  }
-
   .sheet-board {
     min-width: 0;
   }
@@ -1006,7 +1027,6 @@ tbody tr:hover {
     grid-template-areas:
       "sidebar"
       "hero"
-      "analytics"
       "workbook";
   }
 

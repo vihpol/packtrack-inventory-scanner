@@ -29,7 +29,7 @@ function starterData() {
     activity: [
       {
         id: newId(),
-        type: "Demo ready",
+        type: "Ready",
         details: "Ready for registered product scans",
         time: now(),
       },
@@ -57,7 +57,7 @@ function readDb() {
     fresh.activity.unshift({
       id: newId(),
       type: "Database recovered",
-      details: "Bad demo data was backed up and replaced",
+      details: "Bad inventory data was backed up and replaced",
       time: now(),
     });
     writeDb(fresh);
@@ -263,6 +263,18 @@ function addProduct(data, product) {
   pushActivity(data, "Product added", `${description} is ready to scan`);
 }
 
+function deleteProduct(data, barcode) {
+  const normalized = normalizeBarcode(barcode);
+  const index = data.inventory.findIndex((item) => item.barcode === normalized);
+
+  if (index === -1) {
+    throw new Error("Inventory entry was not found");
+  }
+
+  const [removed] = data.inventory.splice(index, 1);
+  pushActivity(data, "Product deleted", `${itemLabel(removed)} was removed from inventory`);
+}
+
 function scanProduct(data, body) {
   const barcode = normalizeBarcode(body.barcode);
   const mode = String(body.mode || "smart").toLowerCase();
@@ -338,6 +350,23 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === "DELETE" && url.pathname.startsWith("/api/products/")) {
+    const barcode = decodeURIComponent(url.pathname.replace("/api/products/", ""));
+
+    try {
+      const data = await runMutation(() => {
+        const nextData = readDb();
+        deleteProduct(nextData, barcode);
+        writeDb(nextData);
+        return nextData;
+      });
+      sendJson(res, 200, data);
+    } catch (error) {
+      sendError(res, 404, error.message);
+    }
+    return;
+  }
+
   sendError(res, 404, "API route not found");
 }
 
@@ -391,7 +420,7 @@ async function routeRequest(req, res) {
 const server = http.createServer(routeRequest);
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Product scan demo running at http://localhost:${PORT}`);
+  console.log(`Inventory scanner running at http://localhost:${PORT}`);
 });
 
 if (fs.existsSync(HTTPS_KEY_PATH) && fs.existsSync(HTTPS_CERT_PATH)) {
