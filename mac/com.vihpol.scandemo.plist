@@ -20,6 +20,8 @@
       <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
       <key>PORT</key>
       <string>5173</string>
+      <key>HTTPS_PORT</key>
+      <string>5443</string>
     </dict>
 
     <key>RunAtLoad</key>

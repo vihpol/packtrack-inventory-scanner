@@ -1,11 +1,15 @@
 const http = require("http");
+const https = require("https");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
 const PORT = Number(process.env.PORT || 5173);
+const HTTPS_PORT = Number(process.env.HTTPS_PORT || 5443);
 const ROOT = __dirname;
 const DB_PATH = path.join(ROOT, "packtrack-db.json");
+const HTTPS_KEY_PATH = process.env.HTTPS_KEY_PATH || path.join(ROOT, "certs", "local-server.key");
+const HTTPS_CERT_PATH = process.env.HTTPS_CERT_PATH || path.join(ROOT, "certs", "local-server.crt");
 const MAX_BODY_BYTES = 1024 * 1024;
 let mutationQueue = Promise.resolve();
 
@@ -371,7 +375,7 @@ function serveStatic(req, res, url) {
   });
 }
 
-const server = http.createServer(async (req, res) => {
+async function routeRequest(req, res) {
   try {
     const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
     if (url.pathname.startsWith("/api/")) {
@@ -382,11 +386,37 @@ const server = http.createServer(async (req, res) => {
   } catch (error) {
     sendError(res, 500, error.message);
   }
-});
+}
+
+const server = http.createServer(routeRequest);
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`Product scan demo running at http://localhost:${PORT}`);
 });
+
+if (fs.existsSync(HTTPS_KEY_PATH) && fs.existsSync(HTTPS_CERT_PATH)) {
+  const secureServer = https.createServer(
+    {
+      key: fs.readFileSync(HTTPS_KEY_PATH),
+      cert: fs.readFileSync(HTTPS_CERT_PATH),
+    },
+    routeRequest
+  );
+
+  secureServer.listen(HTTPS_PORT, "0.0.0.0", () => {
+    console.log(`Secure phone scanner running at https://localhost:${HTTPS_PORT}/scanner`);
+  });
+
+  secureServer.on("error", (error) => {
+    if (error.code === "EADDRINUSE") {
+      console.error(`HTTPS port ${HTTPS_PORT} is already running.`);
+      return;
+    }
+    console.error("HTTPS server error:", error.message);
+  });
+} else {
+  console.log("HTTPS disabled. Run scripts/setup-local-https.sh to create local certificates.");
+}
 
 server.on("error", (error) => {
   if (error.code === "EADDRINUSE") {

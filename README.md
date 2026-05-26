@@ -43,6 +43,31 @@ http://YOUR_MAC_IP:5173/scanner
 
 Phone camera scanning may still require HTTPS, depending on the phone browser. For camera access, use an HTTPS tunnel or deploy the app with HTTPS.
 
+### Local HTTPS for Phone Camera
+
+Create a local HTTPS certificate:
+
+```bash
+chmod +x scripts/setup-local-https.sh
+scripts/setup-local-https.sh
+```
+
+Restart the Mac server:
+
+```bash
+launchctl kickstart -k gui/$(id -u)/com.vihpol.scandemo
+```
+
+The local HTTPS scanner URL will look like:
+
+```text
+https://YOUR_MAC_IP:5443/scanner
+```
+
+To make the phone trust it, install `certs/local-root-ca.pem` on the phone and enable full trust for that certificate in the phone settings.
+
+The barcode scanner library is vendored in `vendor/html5-qrcode.min.js`, so the scanner page does not need a CDN at runtime.
+
 ## Demo Flow
 
 1. Open the app.
