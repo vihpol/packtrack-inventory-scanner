@@ -245,10 +245,73 @@ p {
   font-size: 1.05rem;
 }
 
-#phoneCameraReader {
+#phoneCameraShell {
+  position: relative;
   overflow: hidden;
   margin-top: 14px;
   border-radius: 8px;
+  background: #0f172a;
+}
+
+#phoneCameraReader {
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+#scannerOverlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.scan-corner {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  border-color: #22d3ee;
+  filter: drop-shadow(0 0 9px rgba(34, 211, 238, 0.9));
+}
+
+.top-left {
+  top: 18px;
+  left: 18px;
+  border-top: 4px solid;
+  border-left: 4px solid;
+}
+
+.top-right {
+  top: 18px;
+  right: 18px;
+  border-top: 4px solid;
+  border-right: 4px solid;
+}
+
+.bottom-left {
+  bottom: 18px;
+  left: 18px;
+  border-bottom: 4px solid;
+  border-left: 4px solid;
+}
+
+.bottom-right {
+  right: 18px;
+  bottom: 18px;
+  border-right: 4px solid;
+  border-bottom: 4px solid;
+}
+
+.scan-beam {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #22d3ee, #a7f3d0, #22d3ee, transparent);
+  box-shadow:
+    0 0 16px rgba(34, 211, 238, 0.9),
+    0 0 34px rgba(34, 211, 238, 0.35);
+  animation: phoneScanBeam 1.8s ease-in-out infinite;
 }
 
 .phone-result {
@@ -540,6 +603,19 @@ tbody tr:hover {
 
   100% {
     transform: translateY(0);
+  }
+}
+
+@keyframes phoneScanBeam {
+  0%,
+  100% {
+    transform: translateY(-118px);
+    opacity: 0.35;
+  }
+
+  50% {
+    transform: translateY(118px);
+    opacity: 1;
   }
 }
 

@@ -33,7 +33,16 @@
         <div class="phone-card">
           <h1>Scan Demo</h1>
           <button id="phoneCameraButton" type="button">Camera</button>
-          <div id="phoneCameraReader"></div>
+          <div id="phoneCameraShell">
+            <div id="phoneCameraReader"></div>
+            <div id="scannerOverlay" hidden>
+              <span class="scan-corner top-left"></span>
+              <span class="scan-corner top-right"></span>
+              <span class="scan-corner bottom-left"></span>
+              <span class="scan-corner bottom-right"></span>
+              <span class="scan-beam"></span>
+            </div>
+          </div>
           <div id="phoneScanResult" class="phone-result">Ready to scan.</div>
         </div>
       </section>

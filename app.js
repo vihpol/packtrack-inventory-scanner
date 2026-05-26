@@ -30,6 +30,7 @@ const el = {
   phoneScanner: document.querySelector("#phoneScanner"),
   phoneCameraButton: document.querySelector("#phoneCameraButton"),
   phoneCameraReader: document.querySelector("#phoneCameraReader"),
+  scannerOverlay: document.querySelector("#scannerOverlay"),
   phoneScanResult: document.querySelector("#phoneScanResult"),
 };
 
@@ -287,6 +288,7 @@ async function togglePhoneCamera() {
       formatsToSupport: getSupportedPhoneFormats(),
     });
     el.phoneCameraButton.textContent = "Stop camera";
+    el.scannerOverlay.hidden = false;
     setStatus("Camera is on. Point it at a barcode or QR code.");
 
     await phoneScanner.start(
@@ -308,6 +310,7 @@ async function togglePhoneCamera() {
   } catch (error) {
     phoneScanner = null;
     el.phoneCameraButton.textContent = "Camera";
+    el.scannerOverlay.hidden = true;
     setStatus("Camera permission was blocked or unavailable.", "warn");
   }
 }
@@ -318,6 +321,7 @@ async function stopPhoneCamera() {
   phoneScanner.clear();
   phoneScanner = null;
   el.phoneCameraButton.textContent = "Camera";
+  el.scannerOverlay.hidden = true;
   setStatus("Camera stopped.");
 }
 
