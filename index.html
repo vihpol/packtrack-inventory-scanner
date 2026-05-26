@@ -10,24 +10,43 @@
   </head>
   <body>
     <main class="page">
-      <section class="hero">
-        <h1>Scan Demo</h1>
-        <p class="intro">
-          Scan any barcode to create inventory, receive more stock, or mark an item as sold/returned.
-        </p>
-        <div id="serverNotice" class="server-notice" hidden>
-          Open this demo at <a href="http://localhost:5173">http://localhost:5173</a> so scans can update inventory.
-        </div>
-        <div class="status-strip" aria-label="System status">
-          <div>
-            <span class="status-dot"></span>
-            Dashboard ready
+      <div id="dashboardShell" class="dashboard-shell">
+        <aside class="sidebar">
+          <div class="brand-block">
+            <span class="brand-mark">SD</span>
+            <div>
+              <h1>Scan Demo</h1>
+              <p>Inventory control</p>
+            </div>
           </div>
-          <div id="syncStatus">Checking inventory sync</div>
-          <div id="inventoryCount">0 products loaded</div>
-        </div>
-        <div id="status" class="status">Ready for a scan.</div>
-      </section>
+
+          <nav class="sidebar-nav" aria-label="Dashboard sections">
+            <a href="#inventoryPanel">Inventory list</a>
+            <a href="#incomingPanel">Incoming</a>
+            <a href="#outgoingPanel">Outgoing</a>
+          </nav>
+
+          <div class="sidebar-status">
+            <div>
+              <span class="status-dot"></span>
+              Dashboard ready
+            </div>
+            <div id="syncStatus">Checking inventory sync</div>
+            <div id="inventoryCount">0 products loaded</div>
+          </div>
+
+          <div id="serverNotice" class="server-notice" hidden>
+            Open this demo at <a href="http://localhost:5173">http://localhost:5173</a> so scans can update inventory.
+          </div>
+          <div id="status" class="status">Ready for a scan.</div>
+        </aside>
+
+        <section class="hero">
+          <h2>Dashboard</h2>
+          <p class="intro">
+            Scan any barcode to create inventory, receive more stock, or mark an item as sold/returned.
+          </p>
+        </section>
 
       <section id="phoneScanner" class="phone-scanner" hidden>
         <div class="phone-card">
@@ -153,6 +172,7 @@
           </form>
         </article>
       </section>
+      </div>
     </main>
   </body>
 </html>

@@ -25,6 +25,7 @@ const el = {
   outgoingPanel: document.querySelector("#outgoingPanel"),
   resetButton: document.querySelector("#resetButton"),
   serverNotice: document.querySelector("#serverNotice"),
+  dashboardShell: document.querySelector("#dashboardShell"),
   hero: document.querySelector(".hero"),
   dashboardView: document.querySelector("#dashboardView"),
   phoneScanner: document.querySelector("#phoneScanner"),
@@ -437,12 +438,14 @@ showServerNotice();
 
 if (isPhoneScannerView()) {
   document.body.classList.add("scanner-page");
+  el.dashboardShell.classList.add("scanner-only");
   el.hero.hidden = true;
   el.dashboardView.hidden = true;
   el.phoneScanner.hidden = false;
   el.serverNotice.hidden = true;
 } else {
   document.body.classList.remove("scanner-page");
+  el.dashboardShell.classList.remove("scanner-only");
   el.hero.hidden = false;
   el.dashboardView.hidden = false;
   el.phoneScanner.hidden = true;
