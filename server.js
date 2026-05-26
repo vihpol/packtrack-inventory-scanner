@@ -384,7 +384,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`Product scan demo running at http://localhost:${PORT}`);
 });
 
