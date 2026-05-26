@@ -44,16 +44,16 @@ let phoneScanner = null;
 
 const dashboardViews = {
   inventory: {
-    title: "Inventory list",
-    description: "Current stock on hand. Use this sheet to create a product manually or confirm live quantities.",
+    title: "Switch stock",
+    description: "Rack-ready switch units currently on hand. Create a switch manually or confirm live counts from scanned labels.",
   },
   incoming: {
-    title: "Incoming inventory",
-    description: "Items received from vendors. New scans increase stock and appear in this receiving log.",
+    title: "Receiving dock",
+    description: "Switches received from vendors. New scans increase stock and appear in this receiving log.",
   },
   outgoing: {
-    title: "Outgoing inventory",
-    description: "Items sold, shipped, or returned. Outgoing scans reduce stock and appear in this log.",
+    title: "Deployments and returns",
+    description: "Switches deployed to sites, shipped to customers, or returned. Outgoing scans reduce stock and appear in this log.",
   },
 };
 
@@ -207,17 +207,17 @@ function flash(element, className) {
 
 function renderState(data) {
   renderInventory(data.inventory || []);
-  renderScanList(el.incomingLog, data.incoming || [], "No incoming scans yet.");
-  renderScanList(el.outgoingLog, data.outgoing || [], "No outgoing scans yet.");
+  renderScanList(el.incomingLog, data.incoming || [], "No received switches yet.");
+  renderScanList(el.outgoingLog, data.outgoing || [], "No deployed or returned switches yet.");
 }
 
 function renderInventory(items) {
-  el.inventoryCount.textContent = `${items.length} ${items.length === 1 ? "product" : "products"} loaded`;
+  el.inventoryCount.textContent = `${items.length} ${items.length === 1 ? "switch model" : "switch models"} loaded`;
 
   if (items.length === 0) {
     el.inventoryBody.innerHTML = `
       <tr>
-        <td colspan="6">No inventory yet. Scan or create an entry to start.</td>
+        <td colspan="6">No switch stock yet. Scan a switch label or create an entry to start.</td>
       </tr>
     `;
     previousInventory = new Map();
@@ -231,7 +231,7 @@ function renderInventory(items) {
       return `
         <tr>
           <td><code>${escapeHtml(item.barcode)}</code></td>
-          <td>${escapeHtml(item.description || item.name || "Scanned product")}</td>
+          <td>${escapeHtml(item.description || item.name || "Scanned switch")}</td>
           <td>${money(item.cost)}</td>
           <td class="${changed ? "changed" : ""}">${item.quantity}</td>
           <td>${money(itemValue(item))}</td>
@@ -261,7 +261,7 @@ function renderScanList(container, entries, emptyText) {
         <tr>
           <td>${escapeHtml(scannedAt(entry.time, "Just now"))}</td>
           <td><code>${escapeHtml(entry.barcode || "")}</code></td>
-          <td>${escapeHtml(entry.description || "Scanned product")}</td>
+          <td>${escapeHtml(entry.description || "Scanned switch")}</td>
           <td>${money(entry.cost)}</td>
           <td>${entry.quantity}</td>
           <td>${money(itemValue(entry))}</td>
@@ -303,14 +303,14 @@ async function scanProduct({ barcode, mode = "smart", description = "", cost = 0
 
     renderState(result);
     if (result.mode === "incoming") {
-      setStatus(`${normalized} added to incoming inventory.`, "ok");
+      setStatus(`${normalized} added to switch receiving.`, "ok");
       flash(el.incomingPanel, "scan-success");
       flash(el.inventoryPanel, "inventory-updated");
     } else if (result.matched === false) {
-      setStatus(`${normalized} is not in inventory yet. Receive it first.`, "warn");
+      setStatus(`${normalized} is not in switch stock yet. Receive it first.`, "warn");
       flash(el.outgoingPanel, "scan-warning");
     } else {
-      setStatus(`${normalized} moved to outgoing inventory.`, "ok");
+      setStatus(`${normalized} moved to deployments and returns.`, "ok");
       flash(el.outgoingPanel, "scan-success");
       flash(el.inventoryPanel, "inventory-updated");
     }
@@ -355,7 +355,7 @@ async function togglePhoneCamera() {
         await scanProduct({
           barcode: decodedText,
           mode: "smart",
-          description: `Scanned item ${normalizeScan(decodedText)}`,
+          description: `Scanned switch ${normalizeScan(decodedText)}`,
           quantity: 1,
         });
       }
@@ -400,7 +400,7 @@ async function addProduct(event) {
   const quantity = Number(el.productQuantity.value);
 
   if (!barcode || !description || !Number.isFinite(cost) || !Number.isFinite(quantity) || cost < 0 || quantity < 0) {
-    setStatus("Enter barcode, description, cost, and quantity.", "warn");
+    setStatus("Enter switch label, model/configuration, cost, and units.", "warn");
     flash(el.inventoryPanel, "scan-warning");
     return;
   }
@@ -418,7 +418,7 @@ async function addProduct(event) {
     el.productCost.value = "0";
     el.productQuantity.value = "1";
     el.productBarcode.focus();
-    setStatus(`${description} was added to the inventory list.`, "ok");
+    setStatus(`${description} was added to switch stock.`, "ok");
     flash(el.inventoryPanel, "scan-success");
   } catch (error) {
     setStatus(error.message, "warn");
@@ -510,7 +510,7 @@ loadState()
       scanProduct({
         barcode: barcodeFromUrl,
         mode: getScanModeFromUrl(),
-        description: `Scanned item ${barcodeFromUrl}`,
+        description: `Scanned switch ${barcodeFromUrl}`,
         quantity: 1,
       });
       return;

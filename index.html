@@ -6,7 +6,7 @@
     <title>Micas Switch Inventory</title>
     <link rel="stylesheet" href="./styles.css" />
     <script src="./vendor/html5-qrcode.min.js" defer></script>
-    <script src="./app.js?v=micas-inventory-demo" defer></script>
+    <script src="./app.js?v=micas-switch-inventory" defer></script>
   </head>
   <body>
     <main class="page">
@@ -18,20 +18,20 @@
             </span>
             <div>
               <h1>Inventory</h1>
-              <p>Micas switch demo</p>
+              <p>Switch warehouse demo</p>
             </div>
           </div>
 
           <nav class="sidebar-nav" aria-label="Dashboard pages">
-            <button class="active" type="button" data-view="inventory" aria-current="page">Inventory list</button>
-            <button type="button" data-view="incoming">Incoming</button>
-            <button type="button" data-view="outgoing">Outgoing</button>
+            <button class="active" type="button" data-view="inventory" aria-current="page">Switch stock</button>
+            <button type="button" data-view="incoming">Receiving dock</button>
+            <button type="button" data-view="outgoing">Deploy / return</button>
           </nav>
 
           <div class="sidebar-status">
             <div>
               <span class="status-dot"></span>
-              Dashboard ready
+              Switch console ready
             </div>
             <div id="syncStatus">Checking inventory sync</div>
             <div id="inventoryCount">0 products loaded</div>
@@ -44,16 +44,27 @@
         </aside>
 
         <section class="hero">
-          <h2>Micas Networks switch inventory</h2>
-          <p class="intro">
-            Track switch stock, receiving, and outgoing movement from scanned labels in real time.
-          </p>
+          <div>
+            <h2>Micas Networks switch inventory</h2>
+            <p class="intro">
+              Scan switch labels to track rack-ready stock, receiving, deployments, and returns in real time.
+            </p>
+          </div>
+          <div class="switch-visual" aria-hidden="true">
+            <div class="switch-face">
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+              <i></i><i></i><i></i><i></i>
+            </div>
+            <p>48-port switch intake</p>
+          </div>
         </section>
 
       <section id="phoneScanner" class="phone-scanner" hidden>
         <div class="phone-card">
           <img class="phone-logo" src="./assets/micas-networks-logo.png" alt="Micas Networks" />
-          <h1>Inventory</h1>
+          <h1>Switch Scan</h1>
           <button id="phoneCameraButton" type="button">Camera</button>
           <div id="phoneCameraShell">
             <div id="phoneCameraReader"></div>
@@ -72,31 +83,31 @@
       <section id="dashboardView" class="sheet-board">
         <div class="sheet-toolbar">
           <div>
-            <h2 id="workbookTitle">Inventory list</h2>
-            <p id="workbookDescription">Current stock on hand.</p>
+            <h2 id="workbookTitle">Switch stock</h2>
+            <p id="workbookDescription">Rack-ready switch units currently on hand.</p>
           </div>
           <button id="resetButton" type="button">Reset</button>
         </div>
 
         <article id="inventoryPanel" class="sheet-section" data-view-panel="inventory">
-          <h3>Inventory list</h3>
+          <h3>Switch stock</h3>
           <form id="productForm">
             <div class="table-wrap">
               <table class="sheet-table">
                 <thead>
                   <tr>
-                    <th>SKU / Barcode</th>
-                    <th>Product description</th>
+                    <th>Serial / Asset tag</th>
+                    <th>Switch model / configuration</th>
                     <th>Cost</th>
-                    <th>Quantity</th>
+                    <th>Units</th>
                     <th>Value</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr class="entry-row">
-                    <td><input id="productBarcode" autocomplete="off" placeholder="Scan or paste barcode" required /></td>
-                    <td><input id="productDescription" autocomplete="off" placeholder="Product description" required /></td>
+                    <td><input id="productBarcode" autocomplete="off" placeholder="Scan switch label" required /></td>
+                    <td><input id="productDescription" autocomplete="off" placeholder="Model, port speed, OS, site" required /></td>
                     <td><input id="productCost" type="number" min="0" step="0.01" value="0" required /></td>
                     <td><input id="productQuantity" type="number" min="0" step="1" value="1" required /></td>
                     <td class="formula-cell">Auto</td>
@@ -110,17 +121,17 @@
         </article>
 
         <article id="incomingPanel" class="sheet-section" data-view-panel="incoming" hidden>
-          <h3>Incoming inventory</h3>
+          <h3>Receiving dock</h3>
           <form id="incomingForm">
             <div class="table-wrap">
               <table class="sheet-table">
                 <thead>
                   <tr>
                     <th>Date scanned</th>
-                    <th>SKU / Barcode</th>
-                    <th>Product description</th>
+                    <th>Serial / Asset tag</th>
+                    <th>Switch model / configuration</th>
                     <th>Cost</th>
-                    <th>Quantity</th>
+                    <th>Units</th>
                     <th>Value</th>
                     <th>Action</th>
                   </tr>
@@ -128,8 +139,8 @@
                 <tbody>
                   <tr class="entry-row">
                     <td class="formula-cell">Auto</td>
-                    <td><input id="incomingBarcode" autocomplete="off" placeholder="Incoming barcode" required /></td>
-                    <td><input id="incomingDescription" autocomplete="off" placeholder="Description for new items" /></td>
+                    <td><input id="incomingBarcode" autocomplete="off" placeholder="Incoming switch label" required /></td>
+                    <td><input id="incomingDescription" autocomplete="off" placeholder="Model, port speed, OS, site" /></td>
                     <td><input id="incomingCost" type="number" min="0" step="0.01" value="0" /></td>
                     <td><input id="incomingQuantity" type="number" min="1" step="1" value="1" required /></td>
                     <td class="formula-cell">Auto</td>
@@ -143,17 +154,17 @@
         </article>
 
         <article id="outgoingPanel" class="sheet-section" data-view-panel="outgoing" hidden>
-          <h3>Outgoing inventory</h3>
+          <h3>Deployments and returns</h3>
           <form id="outgoingForm">
             <div class="table-wrap">
               <table class="sheet-table">
                 <thead>
                   <tr>
                     <th>Date scanned</th>
-                    <th>SKU / Barcode</th>
-                    <th>Product description</th>
+                    <th>Serial / Asset tag</th>
+                    <th>Switch model / configuration</th>
                     <th>Cost</th>
-                    <th>Quantity</th>
+                    <th>Units</th>
                     <th>Value</th>
                     <th>Action</th>
                   </tr>
@@ -161,7 +172,7 @@
                 <tbody>
                   <tr class="entry-row">
                     <td class="formula-cell">Auto</td>
-                    <td><input id="outgoingBarcode" autocomplete="off" placeholder="Outgoing barcode" required /></td>
+                    <td><input id="outgoingBarcode" autocomplete="off" placeholder="Switch label leaving stock" required /></td>
                     <td class="formula-cell">Auto</td>
                     <td class="formula-cell">Auto</td>
                     <td class="formula-cell">1</td>
