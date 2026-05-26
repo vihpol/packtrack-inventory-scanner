@@ -87,6 +87,7 @@
                   <th>Description</th>
                   <th>Cost</th>
                   <th>Qty</th>
+                  <th>Value</th>
                 </tr>
               </thead>
               <tbody id="inventoryBody"></tbody>
@@ -124,7 +125,21 @@
             <button id="incomingButton" type="submit">Receive item</button>
           </form>
 
-          <div id="incomingLog" class="scan-list"></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date scanned</th>
+                  <th>Barcode</th>
+                  <th>Description</th>
+                  <th>Cost</th>
+                  <th>Qty</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody id="incomingLog"></tbody>
+            </table>
+          </div>
         </article>
 
         <article id="outgoingPanel" class="panel column-panel">
@@ -143,7 +158,21 @@
             <button id="outgoingButton" type="submit">Send out item</button>
           </form>
 
-          <div id="outgoingLog" class="scan-list"></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date scanned</th>
+                  <th>Barcode</th>
+                  <th>Description</th>
+                  <th>Cost</th>
+                  <th>Qty</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody id="outgoingLog"></tbody>
+            </table>
+          </div>
         </article>
       </section>
     </main>

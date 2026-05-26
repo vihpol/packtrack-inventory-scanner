@@ -134,18 +134,22 @@ function money(value) {
   });
 }
 
-function scannedAt(value) {
-  if (!value) return "Scanned just now";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Scanned just now";
+function itemValue(item) {
+  return Number(item.cost || 0) * Number(item.quantity || 0);
+}
 
-  return `Scanned ${date.toLocaleString(undefined, {
+function scannedAt(value, fallback = "") {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+
+  return date.toLocaleString(undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
-  })}`;
+  });
 }
 
 function flash(element, className) {
@@ -168,7 +172,7 @@ function renderInventory(items) {
   if (items.length === 0) {
     el.inventoryBody.innerHTML = `
       <tr>
-        <td colspan="4">No inventory yet. Scan or create an entry to start.</td>
+        <td colspan="5">No inventory yet. Scan or create an entry to start.</td>
       </tr>
     `;
     previousInventory = new Map();
@@ -185,6 +189,7 @@ function renderInventory(items) {
           <td>${escapeHtml(item.description || item.name || "Scanned product")}</td>
           <td>${money(item.cost)}</td>
           <td class="${changed ? "changed" : ""}">${item.quantity}</td>
+          <td>${money(itemValue(item))}</td>
         </tr>
       `;
     })
@@ -196,24 +201,25 @@ function renderInventory(items) {
 function renderScanList(container, entries, emptyText) {
   const visible = entries.slice(0, 8);
   if (visible.length === 0) {
-    container.innerHTML = `<div class="empty-state">${emptyText}</div>`;
+    container.innerHTML = `
+      <tr>
+        <td colspan="6">${emptyText}</td>
+      </tr>
+    `;
     return;
   }
 
   container.innerHTML = visible
     .map((entry) => {
       return `
-        <div class="scan-entry">
-          <div>
-            <strong>${escapeHtml(entry.description || "Scanned product")}</strong>
-            <code>${escapeHtml(entry.barcode || "")}</code>
-          </div>
-          <div class="scan-date">${escapeHtml(scannedAt(entry.time))}</div>
-          <div class="entry-meta">
-            <span>${money(entry.cost)}</span>
-            <span>Qty ${entry.quantity}</span>
-          </div>
-        </div>
+        <tr>
+          <td>${escapeHtml(scannedAt(entry.time, "Just now"))}</td>
+          <td><code>${escapeHtml(entry.barcode || "")}</code></td>
+          <td>${escapeHtml(entry.description || "Scanned product")}</td>
+          <td>${money(entry.cost)}</td>
+          <td>${entry.quantity}</td>
+          <td>${money(itemValue(entry))}</td>
+        </tr>
       `;
     })
     .join("");

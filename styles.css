@@ -210,10 +210,10 @@ p {
 
 .columns {
   display: grid;
-  grid-template-columns: minmax(320px, 1.28fr) minmax(260px, 1fr) minmax(260px, 1fr);
+  grid-template-columns: minmax(520px, 1.2fr) minmax(460px, 1fr) minmax(460px, 1fr);
   gap: 12px;
   align-items: start;
-  min-width: 880px;
+  min-width: 1480px;
 }
 
 .phone-scanner {
@@ -443,18 +443,23 @@ input:focus {
 table {
   width: 100%;
   border-collapse: collapse;
+  background: #fff;
 }
 
 th,
 td {
-  padding: 12px 9px;
-  border-bottom: 1px solid var(--line);
+  padding: 10px 8px;
+  border: 1px solid #dbe4ed;
   text-align: left;
   vertical-align: top;
 }
 
 th {
-  color: #576777;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #edf4fb;
+  color: #35475a;
   font-size: 0.76rem;
   text-transform: uppercase;
 }
@@ -470,7 +475,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background: #f8fbfc;
+  background: #eef8ff;
 }
 
 .scan-list {
