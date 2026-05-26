@@ -3,20 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Scan Demo</title>
+    <title>Micas Switch Inventory</title>
     <link rel="stylesheet" href="./styles.css" />
     <script src="./vendor/html5-qrcode.min.js" defer></script>
-    <script src="./app.js?v=three-column-demo" defer></script>
+    <script src="./app.js?v=micas-inventory-demo" defer></script>
   </head>
   <body>
     <main class="page">
       <div id="dashboardShell" class="dashboard-shell">
         <aside class="sidebar">
           <div class="brand-block">
-            <span class="brand-mark">SD</span>
+            <span class="brand-mark">
+              <img src="./assets/micas-networks-logo.png" alt="Micas Networks" />
+            </span>
             <div>
-              <h1>Scan Demo</h1>
-              <p>Inventory control</p>
+              <h1>Inventory</h1>
+              <p>Micas switch demo</p>
             </div>
           </div>
 
@@ -42,15 +44,16 @@
         </aside>
 
         <section class="hero">
-          <h2>Dashboard</h2>
+          <h2>Micas Networks switch inventory</h2>
           <p class="intro">
-            Scan any barcode to create inventory, receive more stock, or mark an item as sold/returned.
+            Track switch stock, receiving, and outgoing movement from scanned labels in real time.
           </p>
         </section>
 
       <section id="phoneScanner" class="phone-scanner" hidden>
         <div class="phone-card">
-          <h1>Scan Demo</h1>
+          <img class="phone-logo" src="./assets/micas-networks-logo.png" alt="Micas Networks" />
+          <h1>Inventory</h1>
           <button id="phoneCameraButton" type="button">Camera</button>
           <div id="phoneCameraShell">
             <div id="phoneCameraReader"></div>
