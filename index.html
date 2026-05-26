@@ -47,132 +47,110 @@
         </div>
       </section>
 
-      <section id="dashboardView" class="columns">
-        <article id="inventoryPanel" class="panel column-panel">
-          <div class="card-heading">
-            <div>
-              <h2>Inventory list</h2>
-              <p>Everything currently available.</p>
-            </div>
-            <button id="resetButton" type="button">Reset</button>
+      <section id="dashboardView" class="sheet-board">
+        <div class="sheet-toolbar">
+          <div>
+            <h2>Inventory workbook</h2>
+            <p>All lists are displayed as editable-looking sheets.</p>
           </div>
+          <button id="resetButton" type="button">Reset</button>
+        </div>
 
-          <form id="productForm" class="stack-form">
-            <div>
-              <label for="productBarcode">Barcode</label>
-              <input id="productBarcode" autocomplete="off" placeholder="Scan or paste barcode" required />
+        <article id="inventoryPanel" class="sheet-section">
+          <h3>Inventory list</h3>
+          <form id="productForm">
+            <div class="table-wrap">
+              <table class="sheet-table">
+                <thead>
+                  <tr>
+                    <th>SKU / Barcode</th>
+                    <th>Product description</th>
+                    <th>Cost</th>
+                    <th>Quantity</th>
+                    <th>Value</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="entry-row">
+                    <td><input id="productBarcode" autocomplete="off" placeholder="Scan or paste barcode" required /></td>
+                    <td><input id="productDescription" autocomplete="off" placeholder="Product description" required /></td>
+                    <td><input id="productCost" type="number" min="0" step="0.01" value="0" required /></td>
+                    <td><input id="productQuantity" type="number" min="0" step="1" value="1" required /></td>
+                    <td class="formula-cell">Auto</td>
+                    <td><button id="addProductButton" type="submit">Create</button></td>
+                  </tr>
+                </tbody>
+                <tbody id="inventoryBody"></tbody>
+              </table>
             </div>
-            <div>
-              <label for="productDescription">Product description</label>
-              <input id="productDescription" autocomplete="off" placeholder="Network switch, cable box, router" required />
-            </div>
-            <div class="form-grid">
-              <div>
-                <label for="productCost">Cost</label>
-                <input id="productCost" type="number" min="0" step="0.01" value="0" required />
-              </div>
-              <div>
-                <label for="productQuantity">Quantity</label>
-                <input id="productQuantity" type="number" min="0" step="1" value="1" required />
-              </div>
-            </div>
-            <button id="addProductButton" type="submit">Create entry</button>
           </form>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Barcode</th>
-                  <th>Description</th>
-                  <th>Cost</th>
-                  <th>Qty</th>
-                  <th>Value</th>
-                </tr>
-              </thead>
-              <tbody id="inventoryBody"></tbody>
-            </table>
-          </div>
         </article>
 
-        <article id="incomingPanel" class="panel column-panel">
-          <div class="card-heading">
-            <div>
-              <h2>Incoming inventory</h2>
-              <p>Products received from companies.</p>
+        <article id="incomingPanel" class="sheet-section">
+          <h3>Incoming inventory</h3>
+          <form id="incomingForm">
+            <div class="table-wrap">
+              <table class="sheet-table">
+                <thead>
+                  <tr>
+                    <th>Date scanned</th>
+                    <th>SKU / Barcode</th>
+                    <th>Product description</th>
+                    <th>Cost</th>
+                    <th>Quantity</th>
+                    <th>Value</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="entry-row">
+                    <td class="formula-cell">Auto</td>
+                    <td><input id="incomingBarcode" autocomplete="off" placeholder="Incoming barcode" required /></td>
+                    <td><input id="incomingDescription" autocomplete="off" placeholder="Description for new items" /></td>
+                    <td><input id="incomingCost" type="number" min="0" step="0.01" value="0" /></td>
+                    <td><input id="incomingQuantity" type="number" min="1" step="1" value="1" required /></td>
+                    <td class="formula-cell">Auto</td>
+                    <td><button id="incomingButton" type="submit">Receive</button></td>
+                  </tr>
+                </tbody>
+                <tbody id="incomingLog"></tbody>
+              </table>
             </div>
-          </div>
-
-          <form id="incomingForm" class="stack-form">
-            <div>
-              <label for="incomingBarcode">Incoming barcode</label>
-              <input id="incomingBarcode" autocomplete="off" placeholder="Scan new or existing item" required />
-            </div>
-            <div>
-              <label for="incomingDescription">Description for new items</label>
-              <input id="incomingDescription" autocomplete="off" placeholder="Auto-filled if already known" />
-            </div>
-            <div class="form-grid">
-              <div>
-                <label for="incomingCost">Cost</label>
-                <input id="incomingCost" type="number" min="0" step="0.01" value="0" />
-              </div>
-              <div>
-                <label for="incomingQuantity">Received</label>
-                <input id="incomingQuantity" type="number" min="1" step="1" value="1" required />
-              </div>
-            </div>
-            <button id="incomingButton" type="submit">Receive item</button>
           </form>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date scanned</th>
-                  <th>Barcode</th>
-                  <th>Description</th>
-                  <th>Cost</th>
-                  <th>Qty</th>
-                  <th>Value</th>
-                </tr>
-              </thead>
-              <tbody id="incomingLog"></tbody>
-            </table>
-          </div>
         </article>
 
-        <article id="outgoingPanel" class="panel column-panel">
-          <div class="card-heading">
-            <div>
-              <h2>Outgoing inventory</h2>
-              <p>Products sold, shipped, or returned.</p>
+        <article id="outgoingPanel" class="sheet-section">
+          <h3>Outgoing inventory</h3>
+          <form id="outgoingForm">
+            <div class="table-wrap">
+              <table class="sheet-table">
+                <thead>
+                  <tr>
+                    <th>Date scanned</th>
+                    <th>SKU / Barcode</th>
+                    <th>Product description</th>
+                    <th>Cost</th>
+                    <th>Quantity</th>
+                    <th>Value</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="entry-row">
+                    <td class="formula-cell">Auto</td>
+                    <td><input id="outgoingBarcode" autocomplete="off" placeholder="Outgoing barcode" required /></td>
+                    <td class="formula-cell">Auto</td>
+                    <td class="formula-cell">Auto</td>
+                    <td class="formula-cell">1</td>
+                    <td class="formula-cell">Auto</td>
+                    <td><button id="outgoingButton" type="submit">Send</button></td>
+                  </tr>
+                </tbody>
+                <tbody id="outgoingLog"></tbody>
+              </table>
             </div>
-          </div>
-
-          <form id="outgoingForm" class="stack-form">
-            <div>
-              <label for="outgoingBarcode">Outgoing barcode</label>
-              <input id="outgoingBarcode" autocomplete="off" placeholder="Scan item leaving inventory" required />
-            </div>
-            <button id="outgoingButton" type="submit">Send out item</button>
           </form>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date scanned</th>
-                  <th>Barcode</th>
-                  <th>Description</th>
-                  <th>Cost</th>
-                  <th>Qty</th>
-                  <th>Value</th>
-                </tr>
-              </thead>
-              <tbody id="outgoingLog"></tbody>
-            </table>
-          </div>
         </article>
       </section>
     </main>

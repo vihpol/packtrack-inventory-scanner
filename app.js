@@ -172,7 +172,7 @@ function renderInventory(items) {
   if (items.length === 0) {
     el.inventoryBody.innerHTML = `
       <tr>
-        <td colspan="5">No inventory yet. Scan or create an entry to start.</td>
+        <td colspan="6">No inventory yet. Scan or create an entry to start.</td>
       </tr>
     `;
     previousInventory = new Map();
@@ -190,6 +190,7 @@ function renderInventory(items) {
           <td>${money(item.cost)}</td>
           <td class="${changed ? "changed" : ""}">${item.quantity}</td>
           <td>${money(itemValue(item))}</td>
+          <td></td>
         </tr>
       `;
     })
@@ -203,7 +204,7 @@ function renderScanList(container, entries, emptyText) {
   if (visible.length === 0) {
     container.innerHTML = `
       <tr>
-        <td colspan="6">${emptyText}</td>
+        <td colspan="7">${emptyText}</td>
       </tr>
     `;
     return;
@@ -219,6 +220,7 @@ function renderScanList(container, entries, emptyText) {
           <td>${money(entry.cost)}</td>
           <td>${entry.quantity}</td>
           <td>${money(itemValue(entry))}</td>
+          <td></td>
         </tr>
       `;
     })
