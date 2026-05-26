@@ -76,6 +76,15 @@ code {
   padding: 24px 0;
 }
 
+.scanner-page .page {
+  display: grid;
+  width: 100%;
+  min-height: 100svh;
+  margin: 0;
+  padding: 16px;
+  place-items: center;
+}
+
 .hero {
   position: relative;
   overflow: hidden;
@@ -209,12 +218,14 @@ p {
 
 .phone-scanner {
   display: grid;
-  min-height: calc(100vh - 48px);
+  width: 100%;
+  min-height: calc(100svh - 32px);
   place-items: center;
 }
 
 .phone-card {
-  width: min(420px, 100%);
+  width: min(420px, calc(100vw - 32px));
+  margin: 0 auto;
   border: 1px solid rgba(116, 144, 170, 0.28);
   border-radius: 8px;
   padding: 18px;

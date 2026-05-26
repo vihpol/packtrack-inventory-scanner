@@ -424,11 +424,13 @@ el.phoneCameraButton.addEventListener("click", togglePhoneCamera);
 showServerNotice();
 
 if (isPhoneScannerView()) {
+  document.body.classList.add("scanner-page");
   el.hero.hidden = true;
   el.dashboardView.hidden = true;
   el.phoneScanner.hidden = false;
   el.serverNotice.hidden = true;
 } else {
+  document.body.classList.remove("scanner-page");
   el.hero.hidden = false;
   el.dashboardView.hidden = false;
   el.phoneScanner.hidden = true;
