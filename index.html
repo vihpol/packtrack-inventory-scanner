@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Micas Switch Inventory</title>
+    <title>Micas Network Inventory</title>
     <link rel="stylesheet" href="./styles.css" />
     <script src="./vendor/html5-qrcode.min.js" defer></script>
-    <script src="./app.js?v=micas-switch-inventory" defer></script>
+    <script src="./app.js?v=micas-network-inventory" defer></script>
   </head>
   <body>
     <main class="page">
@@ -18,12 +18,12 @@
             </span>
             <div>
               <h1>Inventory</h1>
-              <p>Switch warehouse demo</p>
+              <p>Network hardware demo</p>
             </div>
           </div>
 
           <nav class="sidebar-nav" aria-label="Dashboard pages">
-            <button class="active" type="button" data-view="inventory" aria-current="page">Switch stock</button>
+            <button class="active" type="button" data-view="inventory" aria-current="page">Hardware stock</button>
             <button type="button" data-view="incoming">Receiving dock</button>
             <button type="button" data-view="outgoing">Deploy / return</button>
           </nav>
@@ -31,7 +31,7 @@
           <div class="sidebar-status">
             <div>
               <span class="status-dot"></span>
-              Switch console ready
+              Network console ready
             </div>
             <div id="syncStatus">Checking inventory sync</div>
             <div id="inventoryCount">0 products loaded</div>
@@ -45,10 +45,16 @@
 
         <section class="hero">
           <div>
-            <h2>Micas Networks switch inventory</h2>
+            <h2>Micas Networks hardware inventory</h2>
             <p class="intro">
-              Scan switch labels to track rack-ready stock, receiving, deployments, and returns in real time.
+              Scan labels for switches, routing gear, optics, and data-center accessories to track stock, receiving, deployments, and returns.
             </p>
+            <div class="equipment-tags" aria-label="Supported demo equipment">
+              <span>SONiC switches</span>
+              <span>1G-800G platforms</span>
+              <span>Optical modules</span>
+              <span>QSFP / OSFP</span>
+            </div>
           </div>
           <div class="switch-visual" aria-hidden="true">
             <div class="switch-face">
@@ -57,14 +63,14 @@
               <span></span><span></span><span></span><span></span><span></span><span></span>
               <i></i><i></i><i></i><i></i>
             </div>
-            <p>48-port switch intake</p>
+            <p>Open networking intake</p>
           </div>
         </section>
 
       <section id="phoneScanner" class="phone-scanner" hidden>
         <div class="phone-card">
           <img class="phone-logo" src="./assets/micas-networks-logo.png" alt="Micas Networks" />
-          <h1>Switch Scan</h1>
+          <h1>Asset Scan</h1>
           <button id="phoneCameraButton" type="button">Camera</button>
           <div id="phoneCameraShell">
             <div id="phoneCameraReader"></div>
@@ -83,21 +89,21 @@
       <section id="dashboardView" class="sheet-board">
         <div class="sheet-toolbar">
           <div>
-            <h2 id="workbookTitle">Switch stock</h2>
-            <p id="workbookDescription">Rack-ready switch units currently on hand.</p>
+            <h2 id="workbookTitle">Hardware stock</h2>
+            <p id="workbookDescription">Rack-ready network equipment currently on hand.</p>
           </div>
           <button id="resetButton" type="button">Reset</button>
         </div>
 
         <article id="inventoryPanel" class="sheet-section" data-view-panel="inventory">
-          <h3>Switch stock</h3>
+          <h3>Hardware stock</h3>
           <form id="productForm">
             <div class="table-wrap">
               <table class="sheet-table">
                 <thead>
                   <tr>
                     <th>Serial / Asset tag</th>
-                    <th>Switch model / configuration</th>
+                    <th>Hardware type / model / configuration</th>
                     <th>Cost</th>
                     <th>Units</th>
                     <th>Value</th>
@@ -106,8 +112,8 @@
                 </thead>
                 <tbody>
                   <tr class="entry-row">
-                    <td><input id="productBarcode" autocomplete="off" placeholder="Scan switch label" required /></td>
-                    <td><input id="productDescription" autocomplete="off" placeholder="Model, port speed, OS, site" required /></td>
+                    <td><input id="productBarcode" autocomplete="off" placeholder="Scan equipment label" required /></td>
+                    <td><input id="productDescription" autocomplete="off" placeholder="Switch, router, optic, speed, OS, site" required /></td>
                     <td><input id="productCost" type="number" min="0" step="0.01" value="0" required /></td>
                     <td><input id="productQuantity" type="number" min="0" step="1" value="1" required /></td>
                     <td class="formula-cell">Auto</td>
@@ -129,7 +135,7 @@
                   <tr>
                     <th>Date scanned</th>
                     <th>Serial / Asset tag</th>
-                    <th>Switch model / configuration</th>
+                    <th>Hardware type / model / configuration</th>
                     <th>Cost</th>
                     <th>Units</th>
                     <th>Value</th>
@@ -139,8 +145,8 @@
                 <tbody>
                   <tr class="entry-row">
                     <td class="formula-cell">Auto</td>
-                    <td><input id="incomingBarcode" autocomplete="off" placeholder="Incoming switch label" required /></td>
-                    <td><input id="incomingDescription" autocomplete="off" placeholder="Model, port speed, OS, site" /></td>
+                    <td><input id="incomingBarcode" autocomplete="off" placeholder="Incoming equipment label" required /></td>
+                    <td><input id="incomingDescription" autocomplete="off" placeholder="Switch, router, optic, speed, OS, site" /></td>
                     <td><input id="incomingCost" type="number" min="0" step="0.01" value="0" /></td>
                     <td><input id="incomingQuantity" type="number" min="1" step="1" value="1" required /></td>
                     <td class="formula-cell">Auto</td>
@@ -162,7 +168,7 @@
                   <tr>
                     <th>Date scanned</th>
                     <th>Serial / Asset tag</th>
-                    <th>Switch model / configuration</th>
+                    <th>Hardware type / model / configuration</th>
                     <th>Cost</th>
                     <th>Units</th>
                     <th>Value</th>
@@ -172,7 +178,7 @@
                 <tbody>
                   <tr class="entry-row">
                     <td class="formula-cell">Auto</td>
-                    <td><input id="outgoingBarcode" autocomplete="off" placeholder="Switch label leaving stock" required /></td>
+                    <td><input id="outgoingBarcode" autocomplete="off" placeholder="Equipment label leaving stock" required /></td>
                     <td class="formula-cell">Auto</td>
                     <td class="formula-cell">Auto</td>
                     <td class="formula-cell">1</td>
