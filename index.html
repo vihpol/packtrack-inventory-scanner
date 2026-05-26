@@ -20,10 +20,10 @@
             </div>
           </div>
 
-          <nav class="sidebar-nav" aria-label="Dashboard sections">
-            <a href="#inventoryPanel">Inventory list</a>
-            <a href="#incomingPanel">Incoming</a>
-            <a href="#outgoingPanel">Outgoing</a>
+          <nav class="sidebar-nav" aria-label="Dashboard pages">
+            <button class="active" type="button" data-view="inventory" aria-current="page">Inventory list</button>
+            <button type="button" data-view="incoming">Incoming</button>
+            <button type="button" data-view="outgoing">Outgoing</button>
           </nav>
 
           <div class="sidebar-status">
@@ -69,13 +69,13 @@
       <section id="dashboardView" class="sheet-board">
         <div class="sheet-toolbar">
           <div>
-            <h2>Inventory workbook</h2>
-            <p>All lists are displayed as editable-looking sheets.</p>
+            <h2 id="workbookTitle">Inventory list</h2>
+            <p id="workbookDescription">Current stock on hand.</p>
           </div>
           <button id="resetButton" type="button">Reset</button>
         </div>
 
-        <article id="inventoryPanel" class="sheet-section">
+        <article id="inventoryPanel" class="sheet-section" data-view-panel="inventory">
           <h3>Inventory list</h3>
           <form id="productForm">
             <div class="table-wrap">
@@ -106,7 +106,7 @@
           </form>
         </article>
 
-        <article id="incomingPanel" class="sheet-section">
+        <article id="incomingPanel" class="sheet-section" data-view-panel="incoming" hidden>
           <h3>Incoming inventory</h3>
           <form id="incomingForm">
             <div class="table-wrap">
@@ -139,7 +139,7 @@
           </form>
         </article>
 
-        <article id="outgoingPanel" class="sheet-section">
+        <article id="outgoingPanel" class="sheet-section" data-view-panel="outgoing" hidden>
           <h3>Outgoing inventory</h3>
           <form id="outgoingForm">
             <div class="table-wrap">

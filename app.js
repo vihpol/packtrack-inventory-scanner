@@ -28,6 +28,10 @@ const el = {
   dashboardShell: document.querySelector("#dashboardShell"),
   hero: document.querySelector(".hero"),
   dashboardView: document.querySelector("#dashboardView"),
+  workbookTitle: document.querySelector("#workbookTitle"),
+  workbookDescription: document.querySelector("#workbookDescription"),
+  navButtons: Array.from(document.querySelectorAll("[data-view]")),
+  viewPanels: Array.from(document.querySelectorAll("[data-view-panel]")),
   phoneScanner: document.querySelector("#phoneScanner"),
   phoneCameraButton: document.querySelector("#phoneCameraButton"),
   phoneCameraReader: document.querySelector("#phoneCameraReader"),
@@ -37,6 +41,21 @@ const el = {
 
 let previousInventory = new Map();
 let phoneScanner = null;
+
+const dashboardViews = {
+  inventory: {
+    title: "Inventory list",
+    description: "Current stock on hand. Use this sheet to create a product manually or confirm live quantities.",
+  },
+  incoming: {
+    title: "Incoming inventory",
+    description: "Items received from vendors. New scans increase stock and appear in this receiving log.",
+  },
+  outgoing: {
+    title: "Outgoing inventory",
+    description: "Items sold, shipped, or returned. Outgoing scans reduce stock and appear in this log.",
+  },
+};
 
 function isPhoneScannerView() {
   return window.location.pathname === "/scanner";
@@ -51,6 +70,31 @@ function showServerNotice() {
   el.serverNotice.hidden = false;
   setStatus("This page was opened as a file. Open http://localhost:5173 so scans can update inventory.", "warn");
   el.syncStatus.textContent = "Inventory sync offline";
+}
+
+function setDashboardView(view) {
+  const selected = dashboardViews[view] ? view : "inventory";
+
+  el.viewPanels.forEach((panel) => {
+    panel.hidden = panel.dataset.viewPanel !== selected;
+  });
+
+  el.navButtons.forEach((button) => {
+    const isActive = button.dataset.view === selected;
+    button.classList.toggle("active", isActive);
+    if (isActive) {
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.removeAttribute("aria-current");
+    }
+  });
+
+  el.workbookTitle.textContent = dashboardViews[selected].title;
+  el.workbookDescription.textContent = dashboardViews[selected].description;
+
+  if (!isPhoneScannerView() && window.location.hash !== `#${selected}`) {
+    history.replaceState(null, "", `#${selected}`);
+  }
 }
 
 function normalizeScan(value) {
@@ -201,7 +245,7 @@ function renderInventory(items) {
 }
 
 function renderScanList(container, entries, emptyText) {
-  const visible = entries.slice(0, 8);
+  const visible = entries;
   if (visible.length === 0) {
     container.innerHTML = `
       <tr>
@@ -433,6 +477,9 @@ el.incomingForm.addEventListener("submit", receiveItem);
 el.outgoingForm.addEventListener("submit", sendOutItem);
 el.resetButton.addEventListener("click", resetDemo);
 el.phoneCameraButton.addEventListener("click", togglePhoneCamera);
+el.navButtons.forEach((button) => {
+  button.addEventListener("click", () => setDashboardView(button.dataset.view));
+});
 
 showServerNotice();
 
@@ -449,6 +496,7 @@ if (isPhoneScannerView()) {
   el.hero.hidden = false;
   el.dashboardView.hidden = false;
   el.phoneScanner.hidden = true;
+  setDashboardView(window.location.hash.replace("#", ""));
 }
 
 loadState()

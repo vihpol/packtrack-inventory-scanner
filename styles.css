@@ -151,19 +151,32 @@ code {
   margin-bottom: 18px;
 }
 
-.sidebar-nav a {
+.sidebar-nav button {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 46px;
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px 12px;
   background: rgba(255, 255, 255, 0.74);
   color: #34485b;
   font-weight: 850;
-  text-decoration: none;
+  text-align: left;
+  box-shadow: none;
 }
 
-.sidebar-nav a:hover {
+.sidebar-nav button:hover {
   border-color: rgba(37, 99, 235, 0.35);
+  background: rgba(255, 255, 255, 0.92);
   color: var(--blue);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12);
+}
+
+.sidebar-nav button.active {
+  border-color: rgba(15, 118, 110, 0.38);
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(37, 99, 235, 0.1));
+  color: #0b5f59;
+  box-shadow: inset 4px 0 0 var(--primary);
 }
 
 .sidebar-status {
@@ -306,6 +319,8 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
 }
 
 .sheet-toolbar h2,
@@ -440,6 +455,7 @@ p {
 .sheet-section {
   position: relative;
   overflow: hidden;
+  min-height: 620px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background:
@@ -517,7 +533,11 @@ input:focus {
 }
 
 .table-wrap {
-  overflow-x: auto;
+  max-height: 68vh;
+  overflow: auto;
+  border: 1px solid #dbe4ed;
+  border-radius: 6px;
+  background: #fff;
 }
 
 table {
@@ -538,7 +558,7 @@ td {
 th {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
   background: #edf4fb;
   color: #35475a;
   font-size: 0.76rem;
@@ -739,6 +759,14 @@ tbody tr:hover {
 }
 
 @media (max-width: 900px) {
+  .sheet-board {
+    min-width: 0;
+  }
+
+  .sheet-section {
+    min-height: auto;
+  }
+
   .column-panel {
     min-height: auto;
   }
