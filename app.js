@@ -52,6 +52,8 @@ let latestActivityId = "";
 let dashboardAlertTimer = null;
 let dashboardPollTimer = null;
 let scanAudioContext = null;
+let hardwareScanBuffer = "";
+let hardwareScanBufferTimer = null;
 
 const dashboardViews = {
   inventory: {
@@ -718,6 +720,46 @@ function handleHardwareScannerKeydown(event) {
   submitHardwareScan(event.currentTarget, mode);
 }
 
+function shouldCaptureHardwareKey(event) {
+  if (isFileMode() || event.ctrlKey || event.metaKey || event.altKey) return false;
+  if (!isPhoneScannerView() && !el.entryModal.hidden) return false;
+  const target = event.target;
+  if (target === el.hardwareScanInput || target === el.phoneHardwareInput) return false;
+  if (target && target.closest && target.closest("input, textarea, select, [contenteditable='true']")) return false;
+  return true;
+}
+
+function resetHardwareScanBuffer() {
+  hardwareScanBuffer = "";
+  if (hardwareScanBufferTimer) {
+    window.clearTimeout(hardwareScanBufferTimer);
+    hardwareScanBufferTimer = null;
+  }
+}
+
+function handleGlobalHardwareScannerKeydown(event) {
+  if (!shouldCaptureHardwareKey(event)) return;
+
+  if (event.key === "Enter" || event.key === "Tab") {
+    const barcode = normalizeScan(hardwareScanBuffer);
+    resetHardwareScanBuffer();
+    if (barcode.length < 3) return;
+    event.preventDefault();
+    scanProduct({
+      barcode,
+      mode: isPhoneScannerView() ? phoneScanMode : "smart",
+      quantity: 1,
+    }).catch(() => {});
+    return;
+  }
+
+  if (event.key.length !== 1) return;
+
+  hardwareScanBuffer += event.key;
+  if (hardwareScanBufferTimer) window.clearTimeout(hardwareScanBufferTimer);
+  hardwareScanBufferTimer = window.setTimeout(resetHardwareScanBuffer, 180);
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -760,6 +802,7 @@ document.addEventListener("click", (event) => {
   if (event.target.closest("button, a, input, textarea, select, label")) return;
   focusHardwareScanner();
 });
+document.addEventListener("keydown", handleGlobalHardwareScannerKeydown);
 
 showServerNotice();
 loadNetworkInfo();
