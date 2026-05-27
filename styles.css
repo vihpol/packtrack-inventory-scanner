@@ -1097,7 +1097,6 @@ td code {
 
 tbody tr {
   transition: background 180ms ease;
-  animation: rowIn 360ms ease both;
 }
 
 tbody tr:hover {
@@ -1120,7 +1119,6 @@ tbody tr:hover {
 .scan-entry {
   display: grid;
   gap: 8px;
-  animation: slideIn 360ms ease both;
 }
 
 .scan-entry strong {
@@ -1156,13 +1154,11 @@ tbody tr:hover {
 .changed {
   color: var(--ok);
   font-weight: 950;
-  animation: countPop 800ms ease;
 }
 
 .scan-success {
   border-color: rgba(21, 128, 61, 0.4);
   box-shadow: 0 18px 42px rgba(21, 128, 61, 0.12);
-  animation: panelPop 700ms ease;
 }
 
 .scan-warning {
