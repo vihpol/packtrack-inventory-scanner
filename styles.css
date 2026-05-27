@@ -191,6 +191,43 @@ code {
   box-shadow: inset 4px 0 0 var(--primary);
 }
 
+.scanner-link-card {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(0, 191, 195, 0.16);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.scanner-link-card span {
+  color: rgba(237, 246, 247, 0.72);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.scanner-link-card a {
+  color: #82f3f4;
+  font-size: 0.78rem;
+  font-weight: 850;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.scanner-link-card a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.scanner-link-card button {
+  width: 100%;
+  min-height: 36px;
+}
+
 .demo-settings {
   border-top: 1px solid rgba(0, 191, 195, 0.16);
   padding-top: 12px;

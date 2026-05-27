@@ -19,6 +19,8 @@ const el = {
   lastScanText: document.querySelector("#lastScanText"),
   loadDemoButton: document.querySelector("#loadDemoButton"),
   resetDemoButton: document.querySelector("#resetDemoButton"),
+  phoneScannerLink: document.querySelector("#phoneScannerLink"),
+  copyScannerLinkButton: document.querySelector("#copyScannerLinkButton"),
   status: document.querySelector("#status"),
   inventoryBody: document.querySelector("#inventoryBody"),
   incomingLog: document.querySelector("#incomingLog"),
@@ -409,6 +411,18 @@ async function loadState(options = {}) {
   }
 }
 
+async function loadNetworkInfo() {
+  if (isPhoneScannerView()) return;
+
+  try {
+    const info = await api("/api/network");
+    el.phoneScannerLink.href = info.scannerUrl;
+    el.phoneScannerLink.textContent = info.scannerUrl;
+  } catch (error) {
+    el.phoneScannerLink.textContent = "Scanner link unavailable";
+  }
+}
+
 async function scanProduct({ barcode, mode = "smart", description = "", cost = 0, quantity = 1 }) {
   const normalized = normalizeScan(barcode);
   if (!normalized) return;
@@ -629,6 +643,16 @@ async function resetInventory() {
   }
 }
 
+async function copyScannerLink() {
+  const scannerUrl = el.phoneScannerLink.href;
+  try {
+    await navigator.clipboard.writeText(scannerUrl);
+    setStatus("Scanner link copied", "ok");
+  } catch (error) {
+    setStatus("Copy failed. Select the link manually.", "warn");
+  }
+}
+
 function openEntryModal() {
   el.entryModal.hidden = false;
   el.productBarcode.focus();
@@ -664,6 +688,7 @@ el.entryModal.addEventListener("click", (event) => {
 el.closeDashboardAlertButton.addEventListener("click", closeDashboardAlert);
 el.loadDemoButton.addEventListener("click", loadDemoData);
 el.resetDemoButton.addEventListener("click", resetInventory);
+el.copyScannerLinkButton.addEventListener("click", copyScannerLink);
 el.phoneCameraButton.addEventListener("click", togglePhoneCamera);
 el.phoneModeButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -676,6 +701,7 @@ el.navButtons.forEach((button) => {
 });
 
 showServerNotice();
+loadNetworkInfo();
 
 if (isPhoneScannerView()) {
   document.body.classList.add("scanner-page");

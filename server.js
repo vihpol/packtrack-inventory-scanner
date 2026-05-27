@@ -3,6 +3,7 @@ const https = require("https");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const os = require("os");
 
 const PORT = Number(process.env.PORT || 5173);
 const HTTPS_PORT = Number(process.env.HTTPS_PORT || 5443);
@@ -108,6 +109,26 @@ function sendJson(res, status, payload) {
 
 function sendError(res, status, message) {
   sendJson(res, status, { error: message });
+}
+
+function getLanAddresses() {
+  return Object.values(os.networkInterfaces())
+    .flat()
+    .filter((address) => {
+      return address && address.family === "IPv4" && !address.internal;
+    })
+    .map((address) => address.address);
+}
+
+function getNetworkInfo() {
+  const addresses = getLanAddresses();
+  const primaryAddress = addresses[0] || "localhost";
+  return {
+    addresses,
+    dashboardUrl: `http://${primaryAddress}:${PORT}`,
+    scannerUrl: `https://${primaryAddress}:${HTTPS_PORT}/scanner`,
+    httpsPort: HTTPS_PORT,
+  };
 }
 
 function readBody(req) {
@@ -330,6 +351,11 @@ function runMutation(task) {
 async function handleApi(req, res, url) {
   if (req.method === "GET" && url.pathname === "/api/health") {
     sendJson(res, 200, { ok: true, time: now() });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/network") {
+    sendJson(res, 200, getNetworkInfo());
     return;
   }
 
