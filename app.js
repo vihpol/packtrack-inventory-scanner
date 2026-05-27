@@ -137,18 +137,19 @@ function playScanPing(tone = "ok") {
   const now = scanAudioContext.currentTime;
   const oscillator = scanAudioContext.createOscillator();
   const gain = scanAudioContext.createGain();
-  const frequency = tone === "warn" ? 260 : 880;
+  const isWarning = tone === "warn";
+  const frequency = isWarning ? 260 : 150;
 
-  oscillator.type = "sine";
+  oscillator.type = isWarning ? "sine" : "sawtooth";
   oscillator.frequency.setValueAtTime(frequency, now);
-  oscillator.frequency.exponentialRampToValueAtTime(tone === "warn" ? 180 : 1320, now + 0.12);
+  oscillator.frequency.exponentialRampToValueAtTime(isWarning ? 180 : 92, now + 0.16);
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.18, now + 0.015);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+  gain.gain.exponentialRampToValueAtTime(isWarning ? 0.18 : 0.11, now + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + (isWarning ? 0.18 : 0.26));
   oscillator.connect(gain);
   gain.connect(scanAudioContext.destination);
   oscillator.start(now);
-  oscillator.stop(now + 0.2);
+  oscillator.stop(now + (isWarning ? 0.2 : 0.28));
 }
 
 function normalizeScan(value) {
@@ -519,7 +520,6 @@ async function togglePhoneCamera() {
           const result = await scanProduct({
             barcode: decodedText,
             mode: phoneScanMode,
-            description: `Scanned item ${normalized}`,
             quantity: 1,
           });
           if (result && result.matched === false) {
@@ -743,7 +743,6 @@ loadState({ silent: true })
       scanProduct({
         barcode: barcodeFromUrl,
         mode: getScanModeFromUrl(),
-        description: `Scanned item ${barcodeFromUrl}`,
         quantity: 1,
       });
       return;

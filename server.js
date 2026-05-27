@@ -195,11 +195,27 @@ function normalizeBarcode(value) {
 function normalizeItemShape(item) {
   return {
     barcode: normalizeBarcode(item.barcode),
-    description: String(item.description || item.name || "Scanned product").trim(),
+    description: String(item.description || item.name || "Unidentified item").trim(),
     cost: Number.isFinite(Number(item.cost)) ? Number(item.cost) : 0,
     quantity: Number.isFinite(Number(item.quantity)) ? Number(item.quantity) : 0,
     aliases: Array.isArray(item.aliases) ? item.aliases.map(normalizeBarcode).filter(Boolean) : [],
   };
+}
+
+function cleanDescription(product, barcode) {
+  const description = String(product.description || product.name || "").trim();
+  if (!description) return "";
+
+  const normalized = description.toLowerCase();
+  const genericDescriptions = new Set([
+    "scanned item",
+    `scanned item ${barcode}`.toLowerCase(),
+    "scanned product",
+    `scanned product ${barcode}`.toLowerCase(),
+    "unidentified item",
+  ]);
+
+  return genericDescriptions.has(normalized) ? "" : description;
 }
 
 function findInventory(data, barcode) {
@@ -241,9 +257,9 @@ function pushActivity(data, type, details) {
 function incomingScan(data, product) {
   const barcode = normalizeBarcode(product.barcode);
   const quantity = Math.max(1, Number(product.quantity || 1));
-  const providedDescription = String(product.description || product.name || "").trim();
+  const providedDescription = cleanDescription(product, barcode);
   const providedCost = product.cost !== undefined && product.cost !== null && product.cost !== "";
-  const description = providedDescription || `Scanned item ${barcode}`;
+  const description = providedDescription || "Unidentified item";
   const cost = providedCost && Number.isFinite(Number(product.cost)) ? Number(product.cost) : 0;
 
   if (!barcode) {
