@@ -194,7 +194,8 @@ code {
 .scanner-link-card {
   display: grid;
   gap: 9px;
-  margin-bottom: 18px;
+  margin-top: 12px;
+  margin-bottom: 4px;
   border: 1px solid rgba(0, 191, 195, 0.16);
   border-radius: 8px;
   padding: 12px;
