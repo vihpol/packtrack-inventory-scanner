@@ -40,6 +40,8 @@ const el = {
   viewPanels: Array.from(document.querySelectorAll("[data-view-panel]")),
   phoneScanner: document.querySelector("#phoneScanner"),
   phoneCameraButton: document.querySelector("#phoneCameraButton"),
+  hardwareScanInput: document.querySelector("#hardwareScanInput"),
+  phoneHardwareInput: document.querySelector("#phoneHardwareInput"),
   phoneModeButtons: Array.from(document.querySelectorAll("[data-scan-mode]")),
   phoneCameraReader: document.querySelector("#phoneCameraReader"),
   scannerOverlay: document.querySelector("#scannerOverlay"),
@@ -698,12 +700,49 @@ function openEntryModal() {
 
 function closeEntryModal() {
   el.entryModal.hidden = true;
+  focusHardwareScanner();
 }
 
 function handleInventoryClick(event) {
   const deleteButton = event.target.closest("[data-delete-barcode]");
   if (!deleteButton) return;
   deleteProduct(deleteButton.dataset.deleteBarcode);
+}
+
+function hardwareScannerInput() {
+  return isPhoneScannerView() ? el.phoneHardwareInput : el.hardwareScanInput;
+}
+
+function focusHardwareScanner() {
+  const input = hardwareScannerInput();
+  if (!input || isFileMode()) return;
+  if (!isPhoneScannerView() && (!el.entryModal.hidden || !el.scannerLaunchModal.hidden)) return;
+  window.setTimeout(() => input.focus(), 40);
+}
+
+async function submitHardwareScan(input, mode) {
+  const barcode = normalizeScan(input.value);
+  input.value = "";
+  if (!barcode) return;
+
+  try {
+    await scanProduct({
+      barcode,
+      mode,
+      quantity: 1,
+    });
+    focusHardwareScanner();
+  } catch (error) {
+    focusHardwareScanner();
+  }
+}
+
+function handleHardwareScannerKeydown(event) {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+
+  const mode = event.currentTarget === el.phoneHardwareInput ? phoneScanMode : "smart";
+  submitHardwareScan(event.currentTarget, mode);
 }
 
 function escapeHtml(value) {
@@ -732,14 +771,25 @@ el.loadDemoButton.addEventListener("click", loadDemoData);
 el.resetDemoButton.addEventListener("click", resetInventory);
 el.copyScannerLinkButton.addEventListener("click", copyScannerLink);
 el.phoneCameraButton.addEventListener("click", togglePhoneCamera);
+if (el.hardwareScanInput) {
+  el.hardwareScanInput.addEventListener("keydown", handleHardwareScannerKeydown);
+}
+if (el.phoneHardwareInput) {
+  el.phoneHardwareInput.addEventListener("keydown", handleHardwareScannerKeydown);
+}
 el.phoneModeButtons.forEach((button) => {
   button.addEventListener("click", () => {
     primeScanAudio();
     setPhoneScanMode(button.dataset.scanMode);
+    focusHardwareScanner();
   });
 });
 el.navButtons.forEach((button) => {
   button.addEventListener("click", () => setDashboardView(button.dataset.view));
+});
+document.addEventListener("click", (event) => {
+  if (event.target.closest("button, a, input, textarea, select, label")) return;
+  focusHardwareScanner();
 });
 
 showServerNotice();
@@ -764,6 +814,7 @@ loadState({ silent: true })
   .then(() => {
     if (isPhoneScannerView()) {
       setPhoneScanMode("smart");
+      focusHardwareScanner();
       return;
     }
     dashboardPollTimer = window.setInterval(() => {
@@ -778,6 +829,6 @@ loadState({ silent: true })
       });
       return;
     }
-    el.productBarcode.focus();
+    focusHardwareScanner();
   })
   .catch((error) => setStatus(error.message, "warn"));

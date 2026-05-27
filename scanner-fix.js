@@ -3,6 +3,7 @@
   const readerElement = document.querySelector("#phoneCameraReader");
   const overlay = document.querySelector("#scannerOverlay");
   const resultElement = document.querySelector("#phoneScanResult");
+  const photoInput = document.querySelector("#phonePhotoInput");
 
   if (!button || !readerElement || !window.location.pathname.endsWith("/scanner")) return;
 
@@ -29,7 +30,7 @@
 
   function selectedMode() {
     const active = document.querySelector("[data-scan-mode].active");
-    return active?.dataset.scanMode || "smart";
+    return active && active.dataset ? active.dataset.scanMode : "smart";
   }
 
   function supportedFormats() {
@@ -56,28 +57,40 @@
 
   function cameraConstraints() {
     return {
-      facingMode: "environment",
-      width: { ideal: 1920 },
-      height: { ideal: 1080 },
-      focusMode: "continuous",
-      advanced: [
-        { focusMode: "continuous" },
-        { exposureMode: "continuous" },
-        { torch: false },
-      ],
+      facingMode: { exact: "environment" },
     };
   }
 
-  function scanConfig() {
+  function barcodeBox() {
+    const viewportWidth = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    const width = Math.max(300, Math.min(760, viewportWidth - 28));
+    const height = Math.max(150, Math.min(280, Math.round(width * 0.34)));
+    return { width, height };
+  }
+
+  function scanConfig({ simple = false } = {}) {
+    if (simple) {
+      return {
+        fps: 8,
+        qrbox: barcodeBox(),
+        disableFlip: true,
+      };
+    }
+
     return {
-      fps: 15,
-      qrbox: { width: 340, height: 150 },
-      aspectRatio: 1.777,
+      fps: 8,
+      qrbox: barcodeBox(),
       disableFlip: true,
       experimentalFeatures: {
         useBarCodeDetectorIfSupported: true,
       },
     };
+  }
+
+  function errorText(error) {
+    if (!error) return "Unknown camera error";
+    if (typeof error === "string") return error;
+    return [error.name, error.message].filter(Boolean).join(": ") || String(error);
   }
 
   async function postScan(barcode) {
@@ -120,7 +133,12 @@
     const normalized = normalize(decodedText);
     console.log("SCAN SUCCESS RAW:", decodedText);
     console.log("SCAN SUCCESS NORMALIZED:", normalized);
-    console.log("SCAN FORMAT:", decodedResult?.result?.format?.formatName || decodedResult?.result?.format || "unknown");
+    const format =
+      decodedResult &&
+      decodedResult.result &&
+      decodedResult.result.format &&
+      (decodedResult.result.format.formatName || decodedResult.result.format);
+    console.log("SCAN FORMAT:", format || "unknown");
 
     setScannerStatus(`${normalized} detected`);
 
@@ -164,16 +182,100 @@
     button.textContent = "Stop camera";
     if (overlay) overlay.hidden = false;
     scanLocked = false;
-    setScannerStatus("Scanner active. Keep the full switch barcode horizontal inside the wide scan box.");
+    setScannerStatus("Scanner active. Fit the entire long barcode inside the wide scan box.");
 
-    await scanner.start(
-      cameraConstraints(),
-      scanConfig(),
-      handleDecoded,
-      (scanError) => {
-        console.debug("SCAN ATTEMPT FAILED:", scanError);
+    const onScanMiss = (scanError) => {
+      console.debug("SCAN ATTEMPT FAILED:", scanError);
+    };
+
+    const errors = [];
+    const attempts = [
+      {
+        label: "rear camera",
+        camera: cameraConstraints(),
+        config: scanConfig(),
+      },
+      {
+        label: "simple rear camera",
+        camera: { facingMode: { exact: "environment" } },
+        config: scanConfig({ simple: true }),
+      },
+    ];
+
+    for (const attempt of attempts) {
+      try {
+        await scanner.start(attempt.camera, attempt.config, handleDecoded, onScanMiss);
+        return;
+      } catch (error) {
+        errors.push(`${attempt.label}: ${errorText(error)}`);
+        console.warn(`${attempt.label} start failed:`, error);
       }
-    );
+    }
+
+    const cameras = await Html5Qrcode.getCameras().catch(() => []);
+    if (!cameras.length) {
+      throw new Error(errors[0] || "No camera found. Check browser camera permission.");
+    }
+
+    const orderedCameras = cameras.slice().sort((a, b) => {
+      const aRear = /back|rear|environment/i.test(a.label || "") ? -1 : 0;
+      const bRear = /back|rear|environment/i.test(b.label || "") ? -1 : 0;
+      return aRear - bRear;
+    });
+
+    for (const camera of orderedCameras) {
+      try {
+        await scanner.start(camera.id, scanConfig({ simple: true }), handleDecoded, onScanMiss);
+        return;
+      } catch (error) {
+        errors.push(`${camera.label || "camera"}: ${errorText(error)}`);
+        console.warn("Camera id start failed:", camera, error);
+      }
+    }
+
+    throw new Error(errors.join(" | "));
+  }
+
+  function createScanner() {
+    return new Html5Qrcode("phoneCameraReader", {
+      formatsToSupport: supportedFormats(),
+      useBarCodeDetectorIfSupported: true,
+      verbose: false,
+    });
+  }
+
+  async function scanPhoto(file) {
+    if (!file) return;
+    if (!window.Html5Qrcode) {
+      setScannerStatus("Scanner library is still loading. Try again.", "warn");
+      return;
+    }
+
+    if (scanner) {
+      await stopScanner({ silent: true });
+    }
+
+    scanner = createScanner();
+    button.textContent = "Start camera";
+    if (overlay) overlay.hidden = true;
+    setScannerStatus("Reading photo...");
+
+    try {
+      const result = await scanner.scanFileV2(file, true);
+      const decodedText = result && (result.decodedText || result.text || result);
+      if (!decodedText) {
+        throw new Error("No barcode found in photo");
+      }
+      await handleDecoded(decodedText, result);
+    } catch (error) {
+      console.error("Photo scan failed:", error);
+      if (typeof window.playScanPing === "function") window.playScanPing("warn");
+      if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
+      setScannerStatus("Photo did not read. Fill the photo with the full barcode and keep it sharp.", "warn");
+      await stopScanner({ silent: true });
+    } finally {
+      if (photoInput) photoInput.value = "";
+    }
   }
 
   async function toggleScanner(event) {
@@ -193,9 +295,26 @@
       button.textContent = "Start camera";
       if (overlay) overlay.hidden = true;
       console.error("Camera start failed:", error);
-      setScannerStatus("Camera access unavailable. Move farther back, allow camera permission, and retry.", "warn");
+      const message = errorText(error);
+      window.__lastCameraError = message;
+      if (/notallowed|permission|denied/i.test(message)) {
+        setScannerStatus("Camera permission is blocked. Allow camera access in the browser settings, then retry.", "warn");
+      } else if (/notfound|no camera|devicesnotfound/i.test(message)) {
+        setScannerStatus("No camera was found on this device/browser.", "warn");
+      } else if (/notreadable|trackstart|in use/i.test(message)) {
+        setScannerStatus("Camera is busy. Close other camera apps/tabs and retry.", "warn");
+      } else if (/constraint|overconstrained/i.test(message)) {
+        setScannerStatus("Camera settings were rejected by this phone. Refresh and retry.", "warn");
+      } else {
+        setScannerStatus(`Camera could not start: ${message.slice(0, 90)}`, "warn");
+      }
     }
   }
 
   button.addEventListener("click", toggleScanner, true);
+  if (photoInput) {
+    photoInput.addEventListener("change", () => {
+      scanPhoto(photoInput.files && photoInput.files[0]);
+    });
+  }
 })();

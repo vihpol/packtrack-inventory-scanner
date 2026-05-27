@@ -619,6 +619,46 @@ p {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.hardware-scan-card {
+  display: grid;
+  grid-template-columns: auto minmax(220px, 1fr);
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(0, 191, 195, 0.22);
+  border-radius: 8px;
+  background: rgba(0, 191, 195, 0.08);
+  padding: 12px 14px;
+}
+
+.hardware-scan-card span {
+  color: rgba(216, 238, 238, 0.72);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hardware-scan-field {
+  width: 100%;
+  border: 1px solid rgba(0, 191, 195, 0.4);
+  border-radius: 8px;
+  background: rgba(5, 18, 23, 0.88);
+  color: var(--text);
+  font: inherit;
+  font-weight: 850;
+  outline: none;
+  padding: 12px 14px;
+}
+
+.hardware-scan-field:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(0, 191, 195, 0.16);
+}
+
+.phone-hardware-field {
+  margin-top: 10px;
+}
+
 .section-heading,
 .modal-heading,
 .modal-actions {
@@ -731,6 +771,31 @@ p {
 #phoneCameraReader {
   overflow: hidden;
   border-radius: 8px;
+}
+
+.photo-scan-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.photo-scan-button {
+  display: grid;
+  min-height: 52px;
+  margin-top: 10px;
+  place-items: center;
+  border: 1px solid rgba(0, 191, 195, 0.35);
+  border-radius: 8px;
+  background: rgba(0, 191, 195, 0.12);
+  color: var(--text);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.photo-scan-button:active {
+  transform: translateY(1px);
 }
 
 #scannerOverlay {

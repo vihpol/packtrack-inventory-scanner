@@ -4,7 +4,15 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const os = require("os");
+const util = require("util");
 const QRCode = require("qrcode");
+
+if (typeof global.TextEncoder === "undefined" && util.TextEncoder) {
+  global.TextEncoder = util.TextEncoder;
+}
+if (typeof global.TextDecoder === "undefined" && util.TextDecoder) {
+  global.TextDecoder = util.TextDecoder;
+}
 
 const PORT = Number(process.env.PORT || 5173);
 const HTTPS_PORT = Number(process.env.HTTPS_PORT || 5443);

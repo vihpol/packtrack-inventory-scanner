@@ -6,8 +6,8 @@
     <title>Micas Inventory</title>
     <link rel="stylesheet" href="./styles.css" />
     <script src="./vendor/html5-qrcode.min.js" defer></script>
-    <script src="./app.js?v=demo-polish" defer></script>
-    <script src="./scanner-fix.js?v=dense-barcodes" defer></script>
+    <script src="./app.js?v=hardware-scanner" defer></script>
+    <script src="./scanner-fix.js?v=photo-scan" defer></script>
     <script src="./qr-fix.js?v=qr-fallback" defer></script>
   </head>
   <body>
@@ -81,8 +81,11 @@
             <button type="button" data-scan-mode="outgoing">Issue</button>
           </div>
           <button id="phoneCameraButton" type="button">Start camera</button>
+          <label class="photo-scan-button" for="phonePhotoInput">Scan from photo</label>
+          <input id="phonePhotoInput" class="photo-scan-input" type="file" accept="image/*" capture="environment" />
+          <input id="phoneHardwareInput" class="hardware-scan-field phone-hardware-field" autocomplete="off" inputmode="none" placeholder="Bluetooth scanner ready" />
           <p class="scanner-help">
-            For switch labels, hold the phone 8–15 inches away, keep the barcode horizontal, and fit the full serial/MAC barcode inside the wide scan box.
+            For dense switch labels, use the camera sideways or take a close photo of the full barcode.
           </p>
           <div id="phoneCameraShell">
             <div id="phoneCameraReader"></div>
@@ -128,6 +131,11 @@
         <section id="lastScanStrip" class="last-scan-strip idle" aria-live="polite">
           <span>Last scan</span>
           <strong id="lastScanText">No scans yet</strong>
+        </section>
+
+        <section class="hardware-scan-card" aria-label="Hardware scanner capture">
+          <span>Hardware scanner</span>
+          <input id="hardwareScanInput" class="hardware-scan-field" autocomplete="off" inputmode="none" placeholder="Ready for USB / Bluetooth scanner" />
         </section>
 
         <article id="inventoryPanel" class="sheet-section" data-view-panel="inventory">
