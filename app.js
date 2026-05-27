@@ -59,7 +59,7 @@ const dashboardViews = {
   },
   history: {
     title: "Scan history",
-    description: "Receiving and issue activity.",
+    description: "Incoming and outgoing activity.",
   },
 };
 
@@ -272,8 +272,8 @@ function flash(element, className) {
 
 function renderState(data) {
   renderInventory(data.inventory || []);
-  renderScanList(el.incomingLog, data.incoming || [], "No receiving activity");
-  renderScanList(el.outgoingLog, data.outgoing || [], "No incoming activity");
+  renderScanList(el.incomingLog, data.incoming || [], "No incoming activity");
+  renderScanList(el.outgoingLog, data.outgoing || [], "No outgoing activity");
   renderMetrics(data);
   renderLastScan(data);
 }
