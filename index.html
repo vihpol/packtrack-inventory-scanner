@@ -6,7 +6,7 @@
     <title>Micas Inventory</title>
     <link rel="stylesheet" href="./styles.css" />
     <script src="./vendor/html5-qrcode.min.js" defer></script>
-    <script src="./app.js?v=scanner-wedge" defer></script>
+    <script src="./app.js?v=label-ai" defer></script>
     <script src="./scanner-fix.js?v=photo-scan" defer></script>
     <script src="./qr-fix.js?v=qr-fallback" defer></script>
   </head>
@@ -208,6 +208,15 @@
             <button id="closeEntryModalButton" class="ghost-button" type="button" aria-label="Close">Close</button>
           </div>
           <form id="productForm" class="modal-form">
+            <div class="label-analyzer">
+              <div>
+                <strong>Label photo</strong>
+                <span id="labelAnalysisStatus">Optional: take a photo to prefill this entry.</span>
+              </div>
+              <label class="ghost-button" for="labelPhotoInput">Choose photo</label>
+              <input id="labelPhotoInput" class="photo-scan-input" type="file" accept="image/*" capture="environment" />
+              <button id="analyzeLabelButton" class="ghost-button" type="button" disabled>Analyze</button>
+            </div>
             <label class="serial-field">
               SKU / Serial
               <input id="productBarcode" autocomplete="off" placeholder="Enter or scan code" required />

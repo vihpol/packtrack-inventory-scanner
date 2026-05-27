@@ -659,6 +659,42 @@ p {
   margin-top: 10px;
 }
 
+.label-analyzer {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(0, 191, 195, 0.22);
+  border-radius: 8px;
+  background: rgba(0, 191, 195, 0.08);
+  padding: 12px;
+}
+
+.label-analyzer strong,
+.label-analyzer span {
+  display: block;
+}
+
+.label-analyzer strong {
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.label-analyzer span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.label-analyzer span.ok {
+  color: var(--ok);
+}
+
+.label-analyzer span.warn {
+  color: var(--warn);
+}
+
 .section-heading,
 .modal-heading,
 .modal-actions {

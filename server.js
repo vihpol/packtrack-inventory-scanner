@@ -21,7 +21,7 @@ const DB_PATH = path.join(ROOT, "packtrack-db.json");
 const HTTPS_KEY_PATH = process.env.HTTPS_KEY_PATH || path.join(ROOT, "certs", "local-server.key");
 const HTTPS_CERT_PATH = process.env.HTTPS_CERT_PATH || path.join(ROOT, "certs", "local-server.crt");
 const PUBLIC_URL_PATH = path.join(ROOT, ".public-url");
-const MAX_BODY_BYTES = 1024 * 1024;
+const MAX_BODY_BYTES = 8 * 1024 * 1024;
 let mutationQueue = Promise.resolve();
 
 function newId() {
@@ -392,6 +392,136 @@ function runMutation(task) {
   return next;
 }
 
+function requestJson(options, payload) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify(payload);
+    const req = https.request(
+      Object.assign({}, options, {
+        headers: Object.assign({}, options.headers || {}, {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        }),
+      }),
+      (res) => {
+        let responseBody = "";
+        res.on("data", (chunk) => {
+          responseBody += chunk;
+        });
+        res.on("end", () => {
+          let parsed = {};
+          try {
+            parsed = responseBody ? JSON.parse(responseBody) : {};
+          } catch (error) {
+            reject(new Error("AI service returned an invalid response"));
+            return;
+          }
+
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            const message =
+              parsed.error && parsed.error.message
+                ? parsed.error.message
+                : `AI service request failed with status ${res.statusCode}`;
+            reject(new Error(message));
+            return;
+          }
+          resolve(parsed);
+        });
+      }
+    );
+
+    req.on("error", reject);
+    req.setTimeout(30000, () => {
+      req.destroy(new Error("AI service timed out"));
+    });
+    req.write(body);
+    req.end();
+  });
+}
+
+function responseText(response) {
+  if (response.output_text) return response.output_text;
+  const chunks = [];
+  (response.output || []).forEach((item) => {
+    (item.content || []).forEach((content) => {
+      if (content.text) chunks.push(content.text);
+      if (content.type === "output_text" && content.annotations === undefined && content.text) chunks.push(content.text);
+    });
+  });
+  return chunks.join("\n").trim();
+}
+
+function parseJsonFromText(text) {
+  const trimmed = String(text || "").trim();
+  if (!trimmed) throw new Error("AI did not return label details");
+  try {
+    return JSON.parse(trimmed);
+  } catch (error) {
+    const match = trimmed.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("AI did not return valid label details");
+    return JSON.parse(match[0]);
+  }
+}
+
+function cleanAnalysisResult(result) {
+  const barcode = normalizeBarcode(result.barcode || result.sku || result.serial || "");
+  const description = String(result.description || result.item || result.model || "").trim();
+  const quantity = Number(result.quantity || result.units || 1);
+  return {
+    barcode,
+    description,
+    quantity: Number.isFinite(quantity) && quantity > 0 ? Math.round(quantity) : 1,
+    confidence: String(result.confidence || "").trim(),
+    notes: String(result.notes || "").trim(),
+  };
+}
+
+async function analyzeLabelPhoto(image) {
+  const apiKey = String(process.env.OPENAI_API_KEY || "").trim();
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not set on the VM server");
+  }
+  if (!/^data:image\/(png|jpe?g|webp);base64,/i.test(String(image || ""))) {
+    throw new Error("Upload a PNG, JPEG, or WebP label photo");
+  }
+
+  const payload = {
+    model: process.env.OPENAI_VISION_MODEL || "gpt-4.1-mini",
+    input: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text:
+              "Analyze this network equipment or shipping label photo. Extract the best visible SKU, serial, barcode text, model, hardware type, and quantity/units. " +
+              "Return only JSON with keys: barcode, description, quantity, confidence, notes. " +
+              "Use barcode for the primary serial/SKU/barcode value. Use description for a concise inventory item name. Use quantity 1 if no quantity is visible. Do not guess values that are not visible.",
+          },
+          {
+            type: "input_image",
+            image_url: image,
+            detail: "high",
+          },
+        ],
+      },
+    ],
+    max_output_tokens: 500,
+  };
+
+  const response = await requestJson(
+    {
+      hostname: "api.openai.com",
+      path: "/v1/responses",
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    },
+    payload
+  );
+  return cleanAnalysisResult(parseJsonFromText(responseText(response)));
+}
+
 async function handleApi(req, res, url) {
   if (req.method === "GET" && url.pathname === "/api/health") {
     sendJson(res, 200, { ok: true, time: now() });
@@ -455,6 +585,18 @@ async function handleApi(req, res, url) {
       sendJson(res, 200, data);
     } catch (error) {
       sendError(res, 400, error.message);
+    }
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/analyze-label") {
+    const body = await readBody(req);
+
+    try {
+      const analysis = await analyzeLabelPhoto(body.image);
+      sendJson(res, 200, analysis);
+    } catch (error) {
+      sendError(res, error.message.indexOf("OPENAI_API_KEY") !== -1 ? 503 : 400, error.message);
     }
     return;
   }
