@@ -36,12 +36,12 @@ let scanLocked = false;
 
 const dashboardViews = {
   inventory: {
-    title: "Active inventory",
-    description: "Network hardware currently available in stock.",
+    title: "Stock on hand",
+    description: "Current equipment count.",
   },
   history: {
-    title: "History",
-    description: "Incoming and outgoing scan logs shown side by side.",
+    title: "Scan history",
+    description: "Receiving and issue activity.",
   },
 };
 
@@ -92,11 +92,11 @@ function setPhoneScanMode(mode) {
   });
 
   const modeLabel = {
-    smart: "Active inventory",
-    incoming: "Incoming inventory",
-    outgoing: "Outgoing inventory",
+    smart: "Stock",
+    incoming: "Receive",
+    outgoing: "Issue",
   }[phoneScanMode];
-  setStatus(`${modeLabel} mode selected. Tap Start camera.`);
+  setStatus(`${modeLabel} mode selected`);
 }
 
 function normalizeScan(value) {
@@ -200,15 +200,15 @@ function flash(element, className) {
 
 function renderState(data) {
   renderInventory(data.inventory || []);
-  renderScanList(el.incomingLog, data.incoming || [], "No incoming scans yet.");
-  renderScanList(el.outgoingLog, data.outgoing || [], "No outgoing scans yet.");
+  renderScanList(el.incomingLog, data.incoming || [], "No receiving activity");
+  renderScanList(el.outgoingLog, data.outgoing || [], "No issue activity");
 }
 
 function renderInventory(items) {
   if (items.length === 0) {
     el.inventoryBody.innerHTML = `
       <tr>
-        <td colspan="4">No hardware stock yet. Scan an equipment label or create an entry to start.</td>
+        <td colspan="4">No stock records</td>
       </tr>
     `;
     previousInventory = new Map();
@@ -222,7 +222,7 @@ function renderInventory(items) {
       return `
         <tr>
           <td><code>${escapeHtml(item.barcode)}</code></td>
-          <td>${escapeHtml(item.description || item.name || "Scanned hardware")}</td>
+          <td>${escapeHtml(item.description || item.name || "Unassigned item")}</td>
           <td class="${changed ? "changed" : ""}">${item.quantity}</td>
           <td><button class="delete-button" type="button" data-delete-barcode="${escapeHtml(item.barcode)}">Delete</button></td>
         </tr>
@@ -250,7 +250,7 @@ function renderScanList(container, entries, emptyText) {
         <tr>
           <td>${escapeHtml(scannedAt(entry.time, "Just now"))}</td>
           <td><code>${escapeHtml(entry.barcode || "")}</code></td>
-          <td>${escapeHtml(entry.description || "Scanned hardware")}</td>
+          <td>${escapeHtml(entry.description || "Unassigned item")}</td>
           <td>${entry.quantity}</td>
         </tr>
       `;
@@ -271,7 +271,7 @@ async function scanProduct({ barcode, mode = "smart", description = "", cost = 0
   const normalized = normalizeScan(barcode);
   if (!normalized) return;
 
-  setStatus(`Scanned ${normalized}. Updating inventory...`);
+  setStatus(`${normalized} scanned`);
 
   try {
     const result = await api("/api/scan-product", {
@@ -287,14 +287,14 @@ async function scanProduct({ barcode, mode = "smart", description = "", cost = 0
 
     renderState(result);
     if (result.mode === "incoming") {
-      setStatus(`${normalized} added to hardware receiving.`, "ok");
+      setStatus(`${normalized} received`, "ok");
       flash(el.historyPanel, "scan-success");
       flash(el.inventoryPanel, "inventory-updated");
     } else if (result.matched === false) {
-      setStatus(`${normalized} is not in hardware stock yet. Receive it first.`, "warn");
+      setStatus(`${normalized} not found in stock`, "warn");
       flash(el.historyPanel, "scan-warning");
     } else {
-      setStatus(`${normalized} moved to deployments and returns.`, "ok");
+      setStatus(`${normalized} issued`, "ok");
       flash(el.historyPanel, "scan-success");
       flash(el.inventoryPanel, "inventory-updated");
     }
@@ -318,7 +318,7 @@ async function togglePhoneCamera() {
   }
 
   if (!window.Html5Qrcode) {
-    setStatus("Camera scanner is still loading. Try again in a second.", "warn");
+    setStatus("Scanner loading. Try again.", "warn");
     return;
   }
 
@@ -329,7 +329,7 @@ async function togglePhoneCamera() {
     el.phoneCameraButton.textContent = "Stop camera";
     el.scannerOverlay.hidden = false;
     scanLocked = false;
-    setStatus("Camera is on. Point it at one barcode or QR code.");
+    setStatus("Scanner active");
 
     await phoneScanner.start(
       { facingMode: "environment" },
@@ -343,17 +343,17 @@ async function togglePhoneCamera() {
         scanLocked = true;
 
         const normalized = normalizeScan(decodedText);
-        setStatus(`Read ${normalized}. Updating ${scanModeLabel(phoneScanMode)}...`);
+        setStatus(`${normalized} detected`);
 
         try {
           await scanProduct({
             barcode: decodedText,
             mode: phoneScanMode,
-            description: `Scanned network hardware ${normalized}`,
+            description: `Scanned item ${normalized}`,
             quantity: 1,
           });
           if (navigator.vibrate) navigator.vibrate(160);
-          setStatus(`Scanned ${normalized}. Camera stopped so it will not scan twice.`, "ok");
+          setStatus(`${normalized} saved`, "ok");
         } catch (error) {
           if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
           setStatus(error.message, "warn");
@@ -367,14 +367,14 @@ async function togglePhoneCamera() {
     phoneScanner = null;
     el.phoneCameraButton.textContent = "Start camera";
     el.scannerOverlay.hidden = true;
-    setStatus("Camera permission was blocked or unavailable.", "warn");
+    setStatus("Camera access unavailable", "warn");
   }
 }
 
 function scanModeLabel(mode) {
-  if (mode === "incoming") return "incoming inventory";
-  if (mode === "outgoing") return "outgoing inventory";
-  return "active inventory";
+  if (mode === "incoming") return "receiving";
+  if (mode === "outgoing") return "issue";
+  return "stock";
 }
 
 async function stopPhoneCamera(options = {}) {
@@ -384,7 +384,7 @@ async function stopPhoneCamera(options = {}) {
   phoneScanner = null;
   el.phoneCameraButton.textContent = "Start camera";
   el.scannerOverlay.hidden = true;
-  if (!options.silent) setStatus("Camera stopped.");
+  if (!options.silent) setStatus("Scanner stopped");
 }
 
 function getSupportedPhoneFormats() {
@@ -409,13 +409,13 @@ async function addProduct(event) {
   const quantity = Number(el.productQuantity.value);
 
   if (!barcode || !description || !Number.isFinite(quantity) || quantity < 0) {
-    setStatus("Enter equipment label, model/configuration, and units.", "warn");
+    setStatus("SKU, item, and units are required", "warn");
     flash(el.inventoryPanel, "scan-warning");
     return;
   }
 
   el.addProductButton.disabled = true;
-  setStatus(`Creating ${description}...`);
+  setStatus(`Saving ${description}`);
 
   try {
     const data = await api("/api/products", {
@@ -426,7 +426,7 @@ async function addProduct(event) {
     el.productForm.reset();
     el.productQuantity.value = "1";
     closeEntryModal();
-    setStatus(`${description} was added to hardware stock.`, "ok");
+    setStatus(`${description} saved`, "ok");
     flash(el.inventoryPanel, "scan-success");
   } catch (error) {
     setStatus(error.message, "warn");
@@ -444,7 +444,7 @@ async function deleteProduct(barcode) {
     const data = await api(`/api/products/${encodeURIComponent(normalized)}`, { method: "DELETE" });
     previousInventory.delete(normalized);
     renderState(data);
-    setStatus(`${normalized} was deleted.`, "ok");
+    setStatus(`${normalized} deleted`, "ok");
     flash(el.inventoryPanel, "scan-success");
   } catch (error) {
     setStatus(error.message, "warn");
@@ -522,7 +522,7 @@ loadState()
       scanProduct({
         barcode: barcodeFromUrl,
         mode: getScanModeFromUrl(),
-        description: `Scanned network hardware ${barcodeFromUrl}`,
+        description: `Scanned item ${barcodeFromUrl}`,
         quantity: 1,
       });
       return;

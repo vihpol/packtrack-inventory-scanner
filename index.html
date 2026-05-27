@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Micas Network Inventory</title>
+    <title>Micas Inventory</title>
     <link rel="stylesheet" href="./styles.css" />
     <script src="./vendor/html5-qrcode.min.js" defer></script>
-    <script src="./app.js?v=micas-scan-modes" defer></script>
+    <script src="./app.js?v=ops-copy" defer></script>
   </head>
   <body>
     <main class="page">
@@ -17,29 +17,29 @@
               <img src="./assets/micas-networks-logo.png" alt="Micas Networks" />
             </span>
             <div>
-              <h1>Inventory</h1>
-              <p>Network hardware</p>
+              <h1>Micas Inventory</h1>
+              <p>Hardware Control</p>
             </div>
           </div>
 
           <nav class="sidebar-nav" aria-label="Dashboard pages">
-            <button class="active" type="button" data-view="inventory" aria-current="page">Active inventory</button>
-            <button type="button" data-view="history">History</button>
+            <button class="active" type="button" data-view="inventory" aria-current="page">Stock on hand</button>
+            <button type="button" data-view="history">Scan history</button>
           </nav>
 
         </aside>
 
         <section class="hero">
           <div>
-            <h2>Micas Networks hardware inventory</h2>
+            <h2>Hardware stock control</h2>
             <p class="intro">
-              Track active network hardware and scan history for switches, routing gear, optics, and data-center accessories.
+              Live receiving and issue counts for network equipment.
             </p>
             <div class="equipment-tags" aria-label="Supported equipment">
-              <span>SONiC switches</span>
-              <span>1G-800G platforms</span>
-              <span>Optical modules</span>
-              <span>QSFP / OSFP</span>
+              <span>Switches</span>
+              <span>Routers</span>
+              <span>Optics</span>
+              <span>Transceivers</span>
             </div>
           </div>
           <div class="switch-visual" aria-hidden="true">
@@ -49,18 +49,18 @@
               <span></span><span></span><span></span><span></span><span></span><span></span>
               <i></i><i></i><i></i><i></i>
             </div>
-            <p>Open networking intake</p>
+            <p>Receiving / issue log</p>
           </div>
         </section>
 
       <section id="phoneScanner" class="phone-scanner" hidden>
         <div class="phone-card">
           <img class="phone-logo" src="./assets/micas-networks-logo.png" alt="Micas Networks" />
-          <h1>Asset Scan</h1>
+          <h1>Scan Station</h1>
           <div class="phone-mode-picker" aria-label="Scan mode">
-            <button class="active" type="button" data-scan-mode="smart">Active</button>
-            <button type="button" data-scan-mode="incoming">Incoming</button>
-            <button type="button" data-scan-mode="outgoing">Outgoing</button>
+            <button class="active" type="button" data-scan-mode="smart">Stock</button>
+            <button type="button" data-scan-mode="incoming">Receive</button>
+            <button type="button" data-scan-mode="outgoing">Issue</button>
           </div>
           <button id="phoneCameraButton" type="button">Start camera</button>
           <div id="phoneCameraShell">
@@ -73,29 +73,29 @@
               <span class="scan-beam"></span>
             </div>
           </div>
-          <div id="phoneScanResult" class="phone-result">Ready to scan.</div>
+          <div id="phoneScanResult" class="phone-result">Scanner idle</div>
         </div>
       </section>
 
       <section id="dashboardView" class="sheet-board">
         <div class="sheet-toolbar">
           <div>
-            <h2 id="workbookTitle">Active inventory</h2>
-            <p id="workbookDescription">Network hardware currently available in stock.</p>
+            <h2 id="workbookTitle">Stock on hand</h2>
+            <p id="workbookDescription">Current equipment count.</p>
           </div>
         </div>
 
         <article id="inventoryPanel" class="sheet-section" data-view-panel="inventory">
           <div class="section-heading">
-            <h3>Active inventory</h3>
+            <h3>Stock on hand</h3>
             <button id="openEntryModalButton" type="button">Add entry</button>
           </div>
           <div class="table-wrap">
             <table class="sheet-table">
               <thead>
                 <tr>
-                  <th>Serial / Asset tag</th>
-                  <th>Hardware type / model / configuration</th>
+                  <th>SKU / Serial</th>
+                  <th>Item</th>
                   <th>Units</th>
                   <th>Action</th>
                 </tr>
@@ -108,14 +108,14 @@
         <article id="historyPanel" class="sheet-section" data-view-panel="history" hidden>
           <div class="history-grid">
             <section class="history-card">
-              <h3>Incoming inventory</h3>
+              <h3>Receiving</h3>
               <div class="table-wrap">
                 <table class="sheet-table">
                   <thead>
                     <tr>
-                      <th>Date scanned</th>
-                      <th>Serial / Asset tag</th>
-                      <th>Hardware type / model / configuration</th>
+                      <th>Scanned</th>
+                      <th>SKU / Serial</th>
+                      <th>Item</th>
                       <th>Units</th>
                     </tr>
                   </thead>
@@ -125,14 +125,14 @@
             </section>
 
             <section class="history-card">
-              <h3>Outgoing inventory</h3>
+              <h3>Issued</h3>
               <div class="table-wrap">
                 <table class="sheet-table">
                   <thead>
                     <tr>
-                      <th>Date scanned</th>
-                      <th>Serial / Asset tag</th>
-                      <th>Hardware type / model / configuration</th>
+                      <th>Scanned</th>
+                      <th>SKU / Serial</th>
+                      <th>Item</th>
                       <th>Units</th>
                     </tr>
                   </thead>
@@ -149,19 +149,19 @@
         <section class="entry-modal" role="dialog" aria-modal="true" aria-labelledby="entryModalTitle">
           <div class="modal-heading">
             <div>
-              <h2 id="entryModalTitle">Add inventory entry</h2>
-              <p>Add a hardware item to the inventory list.</p>
+              <h2 id="entryModalTitle">New stock item</h2>
+              <p>Create a stock record.</p>
             </div>
             <button id="closeEntryModalButton" class="ghost-button" type="button" aria-label="Close">Close</button>
           </div>
           <form id="productForm" class="modal-form">
             <label class="serial-field">
-              Serial / Asset tag
-              <input id="productBarcode" autocomplete="off" placeholder="Scan equipment label" required />
+              SKU / Serial
+              <input id="productBarcode" autocomplete="off" placeholder="Enter or scan code" required />
             </label>
             <label class="hardware-field">
-              Hardware type / model / configuration
-              <input id="productDescription" autocomplete="off" placeholder="Switch, router, optic, speed, OS, site" required />
+              Item
+              <input id="productDescription" autocomplete="off" placeholder="Model, type, or configuration" required />
             </label>
             <label class="units-field">
               Units
@@ -169,7 +169,7 @@
             </label>
             <div class="modal-actions">
               <button id="cancelEntryModalButton" class="ghost-button" type="button">Cancel</button>
-              <button id="addProductButton" type="submit">Add entry</button>
+              <button id="addProductButton" type="submit">Save item</button>
             </div>
           </form>
         </section>
