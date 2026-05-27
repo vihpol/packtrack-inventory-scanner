@@ -6,7 +6,7 @@
     <title>Micas Inventory</title>
     <link rel="stylesheet" href="./styles.css" />
     <script src="./vendor/html5-qrcode.min.js" defer></script>
-    <script src="./app.js?v=ops-copy" defer></script>
+    <script src="./app.js?v=demo-polish" defer></script>
   </head>
   <body>
     <main class="page">
@@ -26,6 +26,12 @@
             <button class="active" type="button" data-view="inventory" aria-current="page">Stock on hand</button>
             <button type="button" data-view="history">Scan history</button>
           </nav>
+
+          <details class="demo-settings">
+            <summary>Settings</summary>
+            <button id="loadDemoButton" class="ghost-button" type="button">Load demo data</button>
+            <button id="resetDemoButton" class="ghost-button" type="button">Reset inventory</button>
+          </details>
 
         </aside>
 
@@ -84,6 +90,30 @@
             <p id="workbookDescription">Current equipment count.</p>
           </div>
         </div>
+
+        <section class="metrics-grid" aria-label="Inventory metrics">
+          <article>
+            <span>Total SKUs</span>
+            <strong id="totalSkus">0</strong>
+          </article>
+          <article>
+            <span>Total units</span>
+            <strong id="totalUnits">0</strong>
+          </article>
+          <article>
+            <span>Received today</span>
+            <strong id="receivedToday">0</strong>
+          </article>
+          <article>
+            <span>Issued today</span>
+            <strong id="issuedToday">0</strong>
+          </article>
+        </section>
+
+        <section id="lastScanStrip" class="last-scan-strip idle" aria-live="polite">
+          <span>Last scan</span>
+          <strong id="lastScanText">No scans yet</strong>
+        </section>
 
         <article id="inventoryPanel" class="sheet-section" data-view-panel="inventory">
           <div class="section-heading">

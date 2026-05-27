@@ -37,6 +37,38 @@ function starterData() {
   };
 }
 
+function demoData() {
+  const data = {
+    inventory: [
+      normalizeItemShape({
+        barcode: "MICAS-S5810-01",
+        description: "S5810-48TS 48-port switch",
+        quantity: 5,
+      }),
+      normalizeItemShape({
+        barcode: "MICAS-S6810-02",
+        description: "S6810-32X 100G spine switch",
+        quantity: 3,
+      }),
+      normalizeItemShape({
+        barcode: "MICAS-QSFP-100G",
+        description: "100G QSFP28 optical module",
+        quantity: 18,
+      }),
+    ],
+    incoming: [],
+    outgoing: [],
+    activity: [],
+  };
+
+  const received = makeLogEntry("Incoming scan", data.inventory[2], 4, "incoming");
+  const issued = makeLogEntry("Outgoing scan", data.inventory[0], 1, "outgoing");
+  data.incoming.unshift(received);
+  data.outgoing.unshift(issued);
+  pushActivity(data, "Demo data loaded", "Sample Micas hardware records are ready");
+  return data;
+}
+
 function readDb() {
   if (!fs.existsSync(DB_PATH)) {
     writeDb(starterData());
@@ -313,6 +345,16 @@ async function handleApi(req, res, url) {
       return nextData;
     });
     sendJson(res, 200, fresh);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/demo") {
+    const demo = await runMutation(() => {
+      const nextData = demoData();
+      writeDb(nextData);
+      return nextData;
+    });
+    sendJson(res, 200, demo);
     return;
   }
 

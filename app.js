@@ -11,6 +11,14 @@ const el = {
   dashboardAlert: document.querySelector("#dashboardAlert"),
   dashboardAlertMessage: document.querySelector("#dashboardAlertMessage"),
   closeDashboardAlertButton: document.querySelector("#closeDashboardAlertButton"),
+  totalSkus: document.querySelector("#totalSkus"),
+  totalUnits: document.querySelector("#totalUnits"),
+  receivedToday: document.querySelector("#receivedToday"),
+  issuedToday: document.querySelector("#issuedToday"),
+  lastScanStrip: document.querySelector("#lastScanStrip"),
+  lastScanText: document.querySelector("#lastScanText"),
+  loadDemoButton: document.querySelector("#loadDemoButton"),
+  resetDemoButton: document.querySelector("#resetDemoButton"),
   status: document.querySelector("#status"),
   inventoryBody: document.querySelector("#inventoryBody"),
   incomingLog: document.querySelector("#incomingLog"),
@@ -231,6 +239,26 @@ function scannedAt(value, fallback = "") {
   });
 }
 
+function isToday(value) {
+  if (!value) return false;
+  const date = new Date(value);
+  const today = new Date();
+  return (
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+  );
+}
+
+function timeOnly(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function flash(element, className) {
   element.classList.remove(className);
   window.requestAnimationFrame(() => {
@@ -243,6 +271,43 @@ function renderState(data) {
   renderInventory(data.inventory || []);
   renderScanList(el.incomingLog, data.incoming || [], "No receiving activity");
   renderScanList(el.outgoingLog, data.outgoing || [], "No issue activity");
+  renderMetrics(data);
+  renderLastScan(data);
+}
+
+function renderMetrics(data) {
+  const inventory = data.inventory || [];
+  const incoming = data.incoming || [];
+  const outgoing = data.outgoing || [];
+
+  el.totalSkus.textContent = inventory.length;
+  el.totalUnits.textContent = inventory.reduce((total, item) => total + Number(item.quantity || 0), 0);
+  el.receivedToday.textContent = incoming
+    .filter((entry) => isToday(entry.time))
+    .reduce((total, entry) => total + Number(entry.quantity || 0), 0);
+  el.issuedToday.textContent = outgoing
+    .filter((entry) => isToday(entry.time))
+    .reduce((total, entry) => total + Number(entry.quantity || 0), 0);
+}
+
+function renderLastScan(data) {
+  const incoming = (data.incoming || []).map((entry) => ({ ...entry, direction: "received" }));
+  const outgoing = (data.outgoing || []).map((entry) => ({ ...entry, direction: "issued" }));
+  const latest = incoming
+    .concat(outgoing)
+    .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())[0];
+
+  if (!latest) {
+    el.lastScanStrip.className = "last-scan-strip idle";
+    el.lastScanText.textContent = "No scans yet";
+    return;
+  }
+
+  const isReceived = latest.direction === "received";
+  const verb = isReceived ? "RECEIVED" : "ISSUED";
+  const delta = `${isReceived ? "+" : "-"}${latest.quantity || 1} unit${Number(latest.quantity || 1) === 1 ? "" : "s"}`;
+  el.lastScanStrip.className = `last-scan-strip ${latest.direction}`;
+  el.lastScanText.textContent = `${verb} • ${latest.barcode} • ${delta} • ${timeOnly(latest.time)}`;
 }
 
 function showDashboardAlert(message) {
@@ -540,6 +605,30 @@ async function deleteProduct(barcode) {
   }
 }
 
+async function loadDemoData() {
+  try {
+    const data = await api("/api/demo", { method: "POST" });
+    renderState(data);
+    processDashboardActivity(data.activity, { silent: true });
+    setStatus("Demo data loaded", "ok");
+    flash(el.inventoryPanel, "scan-success");
+  } catch (error) {
+    setStatus(error.message, "warn");
+  }
+}
+
+async function resetInventory() {
+  try {
+    const data = await api("/api/reset", { method: "POST" });
+    previousInventory = new Map();
+    renderState(data);
+    processDashboardActivity(data.activity, { silent: true });
+    setStatus("Inventory reset", "ok");
+  } catch (error) {
+    setStatus(error.message, "warn");
+  }
+}
+
 function openEntryModal() {
   el.entryModal.hidden = false;
   el.productBarcode.focus();
@@ -573,6 +662,8 @@ el.entryModal.addEventListener("click", (event) => {
   if (event.target === el.entryModal) closeEntryModal();
 });
 el.closeDashboardAlertButton.addEventListener("click", closeDashboardAlert);
+el.loadDemoButton.addEventListener("click", loadDemoData);
+el.resetDemoButton.addEventListener("click", resetInventory);
 el.phoneCameraButton.addEventListener("click", togglePhoneCamera);
 el.phoneModeButtons.forEach((button) => {
   button.addEventListener("click", () => {
