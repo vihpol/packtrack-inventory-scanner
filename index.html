@@ -6,7 +6,7 @@
     <title>Micas Network Inventory</title>
     <link rel="stylesheet" href="./styles.css" />
     <script src="./vendor/html5-qrcode.min.js" defer></script>
-    <script src="./app.js?v=micas-clean-inventory" defer></script>
+    <script src="./app.js?v=micas-dark-history" defer></script>
   </head>
   <body>
     <main class="page">
@@ -23,9 +23,8 @@
           </div>
 
           <nav class="sidebar-nav" aria-label="Dashboard pages">
-            <button class="active" type="button" data-view="inventory" aria-current="page">Hardware stock</button>
-            <button type="button" data-view="incoming">Receiving dock</button>
-            <button type="button" data-view="outgoing">Deploy / return</button>
+            <button class="active" type="button" data-view="inventory" aria-current="page">Active inventory</button>
+            <button type="button" data-view="history">History</button>
           </nav>
 
         </aside>
@@ -34,7 +33,7 @@
           <div>
             <h2>Micas Networks hardware inventory</h2>
             <p class="intro">
-              Scan labels for switches, routing gear, optics, and data-center accessories to track stock, receiving, deployments, and returns.
+              Track active network hardware and scan history for switches, routing gear, optics, and data-center accessories.
             </p>
             <div class="equipment-tags" aria-label="Supported equipment">
               <span>SONiC switches</span>
@@ -76,14 +75,14 @@
       <section id="dashboardView" class="sheet-board">
         <div class="sheet-toolbar">
           <div>
-            <h2 id="workbookTitle">Hardware stock</h2>
-            <p id="workbookDescription">Rack-ready network equipment currently on hand.</p>
+            <h2 id="workbookTitle">Active inventory</h2>
+            <p id="workbookDescription">Network hardware currently available in stock.</p>
           </div>
         </div>
 
         <article id="inventoryPanel" class="sheet-section" data-view-panel="inventory">
           <div class="section-heading">
-            <h3>Hardware stock</h3>
+            <h3>Active inventory</h3>
             <button id="openEntryModalButton" type="button">Add entry</button>
           </div>
           <div class="table-wrap">
@@ -103,70 +102,46 @@
           </div>
         </article>
 
-        <article id="incomingPanel" class="sheet-section" data-view-panel="incoming" hidden>
-          <h3>Receiving dock</h3>
-          <form id="incomingForm">
-            <div class="table-wrap">
-              <table class="sheet-table">
-                <thead>
-                  <tr>
-                    <th>Date scanned</th>
-                    <th>Serial / Asset tag</th>
-                    <th>Hardware type / model / configuration</th>
-                    <th>Cost</th>
-                    <th>Units</th>
-                    <th>Value</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr class="entry-row">
-                    <td class="formula-cell">Auto</td>
-                    <td><input id="incomingBarcode" autocomplete="off" placeholder="Incoming equipment label" required /></td>
-                    <td><input id="incomingDescription" autocomplete="off" placeholder="Switch, router, optic, speed, OS, site" /></td>
-                    <td><input id="incomingCost" type="number" min="0" step="0.01" value="0" /></td>
-                    <td><input id="incomingQuantity" type="number" min="1" step="1" value="1" required /></td>
-                    <td class="formula-cell">Auto</td>
-                    <td><button id="incomingButton" type="submit">Receive</button></td>
-                  </tr>
-                </tbody>
-                <tbody id="incomingLog"></tbody>
-              </table>
-            </div>
-          </form>
-        </article>
+        <article id="historyPanel" class="sheet-section" data-view-panel="history" hidden>
+          <div class="history-grid">
+            <section class="history-card">
+              <h3>Incoming inventory</h3>
+              <div class="table-wrap">
+                <table class="sheet-table">
+                  <thead>
+                    <tr>
+                      <th>Date scanned</th>
+                      <th>Serial / Asset tag</th>
+                      <th>Hardware type / model / configuration</th>
+                      <th>Cost</th>
+                      <th>Units</th>
+                      <th>Value</th>
+                    </tr>
+                  </thead>
+                  <tbody id="incomingLog"></tbody>
+                </table>
+              </div>
+            </section>
 
-        <article id="outgoingPanel" class="sheet-section" data-view-panel="outgoing" hidden>
-          <h3>Deployments and returns</h3>
-          <form id="outgoingForm">
-            <div class="table-wrap">
-              <table class="sheet-table">
-                <thead>
-                  <tr>
-                    <th>Date scanned</th>
-                    <th>Serial / Asset tag</th>
-                    <th>Hardware type / model / configuration</th>
-                    <th>Cost</th>
-                    <th>Units</th>
-                    <th>Value</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr class="entry-row">
-                    <td class="formula-cell">Auto</td>
-                    <td><input id="outgoingBarcode" autocomplete="off" placeholder="Equipment label leaving stock" required /></td>
-                    <td class="formula-cell">Auto</td>
-                    <td class="formula-cell">Auto</td>
-                    <td class="formula-cell">1</td>
-                    <td class="formula-cell">Auto</td>
-                    <td><button id="outgoingButton" type="submit">Send</button></td>
-                  </tr>
-                </tbody>
-                <tbody id="outgoingLog"></tbody>
-              </table>
-            </div>
-          </form>
+            <section class="history-card">
+              <h3>Outgoing inventory</h3>
+              <div class="table-wrap">
+                <table class="sheet-table">
+                  <thead>
+                    <tr>
+                      <th>Date scanned</th>
+                      <th>Serial / Asset tag</th>
+                      <th>Hardware type / model / configuration</th>
+                      <th>Cost</th>
+                      <th>Units</th>
+                      <th>Value</th>
+                    </tr>
+                  </thead>
+                  <tbody id="outgoingLog"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
         </article>
       </section>
       </div>

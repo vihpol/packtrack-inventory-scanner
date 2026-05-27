@@ -9,22 +9,12 @@ const el = {
   closeEntryModalButton: document.querySelector("#closeEntryModalButton"),
   cancelEntryModalButton: document.querySelector("#cancelEntryModalButton"),
   entryModal: document.querySelector("#entryModal"),
-  incomingForm: document.querySelector("#incomingForm"),
-  incomingBarcode: document.querySelector("#incomingBarcode"),
-  incomingDescription: document.querySelector("#incomingDescription"),
-  incomingCost: document.querySelector("#incomingCost"),
-  incomingQuantity: document.querySelector("#incomingQuantity"),
-  incomingButton: document.querySelector("#incomingButton"),
-  outgoingForm: document.querySelector("#outgoingForm"),
-  outgoingBarcode: document.querySelector("#outgoingBarcode"),
-  outgoingButton: document.querySelector("#outgoingButton"),
   status: document.querySelector("#status"),
   inventoryBody: document.querySelector("#inventoryBody"),
   incomingLog: document.querySelector("#incomingLog"),
   outgoingLog: document.querySelector("#outgoingLog"),
   inventoryPanel: document.querySelector("#inventoryPanel"),
-  incomingPanel: document.querySelector("#incomingPanel"),
-  outgoingPanel: document.querySelector("#outgoingPanel"),
+  historyPanel: document.querySelector("#historyPanel"),
   dashboardShell: document.querySelector("#dashboardShell"),
   hero: document.querySelector(".hero"),
   dashboardView: document.querySelector("#dashboardView"),
@@ -44,16 +34,12 @@ let phoneScanner = null;
 
 const dashboardViews = {
   inventory: {
-    title: "Hardware stock",
-    description: "Rack-ready switches, routing gear, optics, and accessories currently on hand.",
+    title: "Active inventory",
+    description: "Network hardware currently available in stock.",
   },
-  incoming: {
-    title: "Receiving dock",
-    description: "Network hardware received from vendors. New scans increase stock and appear in this receiving log.",
-  },
-  outgoing: {
-    title: "Deployments and returns",
-    description: "Equipment deployed to sites, shipped to customers, or returned. Outgoing scans reduce stock and appear in this log.",
+  history: {
+    title: "History",
+    description: "Incoming and outgoing scan logs shown side by side.",
   },
 };
 
@@ -207,8 +193,8 @@ function flash(element, className) {
 
 function renderState(data) {
   renderInventory(data.inventory || []);
-  renderScanList(el.incomingLog, data.incoming || [], "No received network hardware yet.");
-  renderScanList(el.outgoingLog, data.outgoing || [], "No deployed or returned hardware yet.");
+  renderScanList(el.incomingLog, data.incoming || [], "No incoming scans yet.");
+  renderScanList(el.outgoingLog, data.outgoing || [], "No outgoing scans yet.");
 }
 
 function renderInventory(items) {
@@ -247,7 +233,7 @@ function renderScanList(container, entries, emptyText) {
   if (visible.length === 0) {
     container.innerHTML = `
       <tr>
-        <td colspan="7">${emptyText}</td>
+        <td colspan="6">${emptyText}</td>
       </tr>
     `;
     return;
@@ -263,7 +249,6 @@ function renderScanList(container, entries, emptyText) {
           <td>${money(entry.cost)}</td>
           <td>${entry.quantity}</td>
           <td>${money(itemValue(entry))}</td>
-          <td></td>
         </tr>
       `;
     })
@@ -300,19 +285,19 @@ async function scanProduct({ barcode, mode = "smart", description = "", cost = 0
     renderState(result);
     if (result.mode === "incoming") {
       setStatus(`${normalized} added to hardware receiving.`, "ok");
-      flash(el.incomingPanel, "scan-success");
+      flash(el.historyPanel, "scan-success");
       flash(el.inventoryPanel, "inventory-updated");
     } else if (result.matched === false) {
       setStatus(`${normalized} is not in hardware stock yet. Receive it first.`, "warn");
-      flash(el.outgoingPanel, "scan-warning");
+      flash(el.historyPanel, "scan-warning");
     } else {
       setStatus(`${normalized} moved to deployments and returns.`, "ok");
-      flash(el.outgoingPanel, "scan-success");
+      flash(el.historyPanel, "scan-success");
       flash(el.inventoryPanel, "inventory-updated");
     }
   } catch (error) {
     setStatus(error.message, "warn");
-    flash(mode === "outgoing" || mode === "out" ? el.outgoingPanel : el.incomingPanel, "scan-warning");
+    flash(mode === "outgoing" || mode === "out" ? el.historyPanel : el.inventoryPanel, "scan-warning");
   }
 }
 
@@ -455,33 +440,6 @@ function handleInventoryClick(event) {
   deleteProduct(deleteButton.dataset.deleteBarcode);
 }
 
-async function receiveItem(event) {
-  event.preventDefault();
-
-  await scanProduct({
-    barcode: el.incomingBarcode.value,
-    mode: "incoming",
-    description: el.incomingDescription.value,
-    cost: Number(el.incomingCost.value),
-    quantity: Number(el.incomingQuantity.value || 1),
-  });
-
-  el.incomingForm.reset();
-  el.incomingCost.value = "0";
-  el.incomingQuantity.value = "1";
-  el.incomingBarcode.focus();
-}
-
-async function sendOutItem(event) {
-  event.preventDefault();
-  await scanProduct({
-    barcode: el.outgoingBarcode.value,
-    mode: "outgoing",
-  });
-  el.outgoingForm.reset();
-  el.outgoingBarcode.focus();
-}
-
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -492,8 +450,6 @@ function escapeHtml(value) {
 }
 
 el.productForm.addEventListener("submit", addProduct);
-el.incomingForm.addEventListener("submit", receiveItem);
-el.outgoingForm.addEventListener("submit", sendOutItem);
 el.inventoryBody.addEventListener("click", handleInventoryClick);
 el.openEntryModalButton.addEventListener("click", openEntryModal);
 el.closeEntryModalButton.addEventListener("click", closeEntryModal);
