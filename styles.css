@@ -265,6 +265,16 @@ code {
   height: auto;
 }
 
+.launch-qr {
+  margin: 0 auto 14px;
+  width: min(320px, 100%);
+  padding: 16px;
+}
+
+.launch-qr img {
+  width: 100%;
+}
+
 .scanner-link-card span {
   color: rgba(237, 246, 247, 0.72);
   font-size: 0.72rem;
@@ -979,7 +989,8 @@ td code {
   place-items: center;
 }
 
-.entry-modal {
+.entry-modal,
+.qr-launch-modal {
   width: min(1120px, 100%);
   max-height: calc(100svh - 40px);
   overflow: auto;
@@ -988,6 +999,29 @@ td code {
   padding: 18px;
   background: #07151c;
   box-shadow: 0 30px 80px rgba(7, 21, 28, 0.32);
+}
+
+.qr-launch-modal {
+  width: min(460px, 100%);
+}
+
+.qr-backdrop {
+  z-index: 26;
+}
+
+.launch-scanner-link {
+  display: block;
+  color: #82f3f4;
+  font-size: 0.85rem;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+  text-align: center;
+  text-decoration: none;
+}
+
+.launch-scanner-link:hover {
+  color: #fff;
+  text-decoration: underline;
 }
 
 .modal-heading {

@@ -22,6 +22,9 @@ const el = {
   phoneScannerLink: document.querySelector("#phoneScannerLink"),
   copyScannerLinkButton: document.querySelector("#copyScannerLinkButton"),
   scannerQrCode: document.querySelector("#scannerQrCode"),
+  scannerLaunchModal: document.querySelector("#scannerLaunchModal"),
+  closeScannerLaunchButton: document.querySelector("#closeScannerLaunchButton"),
+  launchScannerLink: document.querySelector("#launchScannerLink"),
   status: document.querySelector("#status"),
   inventoryBody: document.querySelector("#inventoryBody"),
   incomingLog: document.querySelector("#incomingLog"),
@@ -420,9 +423,13 @@ async function loadNetworkInfo() {
     const info = await api("/api/network");
     el.phoneScannerLink.href = info.scannerUrl;
     el.phoneScannerLink.textContent = info.scannerUrl;
+    el.launchScannerLink.href = info.scannerUrl;
+    el.launchScannerLink.textContent = info.scannerUrl;
     renderScannerQr(info.scannerUrl);
+    openScannerLaunchModal();
   } catch (error) {
     el.phoneScannerLink.textContent = "Scanner link unavailable";
+    el.launchScannerLink.textContent = "Scanner link unavailable";
     el.scannerQrCode.textContent = "";
   }
 }
@@ -433,6 +440,15 @@ function renderScannerQr(url) {
   image.src = `/api/scanner-qr.svg?refresh=${Date.now()}`;
   image.alt = `QR code for ${url}`;
   el.scannerQrCode.appendChild(image);
+}
+
+function openScannerLaunchModal() {
+  if (isPhoneScannerView()) return;
+  el.scannerLaunchModal.hidden = false;
+}
+
+function closeScannerLaunchModal() {
+  el.scannerLaunchModal.hidden = true;
 }
 
 async function scanProduct({ barcode, mode = "smart", description = "", cost = 0, quantity = 1 }) {
@@ -695,6 +711,10 @@ el.closeEntryModalButton.addEventListener("click", closeEntryModal);
 el.cancelEntryModalButton.addEventListener("click", closeEntryModal);
 el.entryModal.addEventListener("click", (event) => {
   if (event.target === el.entryModal) closeEntryModal();
+});
+el.closeScannerLaunchButton.addEventListener("click", closeScannerLaunchModal);
+el.scannerLaunchModal.addEventListener("click", (event) => {
+  if (event.target === el.scannerLaunchModal) closeScannerLaunchModal();
 });
 el.closeDashboardAlertButton.addEventListener("click", closeDashboardAlert);
 el.loadDemoButton.addEventListener("click", loadDemoData);
