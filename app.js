@@ -176,17 +176,6 @@ function setStatus(message, tone = "") {
   }
 }
 
-function money(value) {
-  return Number(value || 0).toLocaleString(undefined, {
-    style: "currency",
-    currency: "USD",
-  });
-}
-
-function itemValue(item) {
-  return Number(item.cost || 0) * Number(item.quantity || 0);
-}
-
 function scannedAt(value, fallback = "") {
   if (!value) return fallback;
   const date = new Date(value);
@@ -219,7 +208,7 @@ function renderInventory(items) {
   if (items.length === 0) {
     el.inventoryBody.innerHTML = `
       <tr>
-        <td colspan="6">No hardware stock yet. Scan an equipment label or create an entry to start.</td>
+        <td colspan="4">No hardware stock yet. Scan an equipment label or create an entry to start.</td>
       </tr>
     `;
     previousInventory = new Map();
@@ -234,9 +223,7 @@ function renderInventory(items) {
         <tr>
           <td><code>${escapeHtml(item.barcode)}</code></td>
           <td>${escapeHtml(item.description || item.name || "Scanned hardware")}</td>
-          <td>${money(item.cost)}</td>
           <td class="${changed ? "changed" : ""}">${item.quantity}</td>
-          <td>${money(itemValue(item))}</td>
           <td><button class="delete-button" type="button" data-delete-barcode="${escapeHtml(item.barcode)}">Delete</button></td>
         </tr>
       `;
@@ -251,7 +238,7 @@ function renderScanList(container, entries, emptyText) {
   if (visible.length === 0) {
     container.innerHTML = `
       <tr>
-        <td colspan="6">${emptyText}</td>
+        <td colspan="4">${emptyText}</td>
       </tr>
     `;
     return;
@@ -264,9 +251,7 @@ function renderScanList(container, entries, emptyText) {
           <td>${escapeHtml(scannedAt(entry.time, "Just now"))}</td>
           <td><code>${escapeHtml(entry.barcode || "")}</code></td>
           <td>${escapeHtml(entry.description || "Scanned hardware")}</td>
-          <td>${money(entry.cost)}</td>
           <td>${entry.quantity}</td>
-          <td>${money(itemValue(entry))}</td>
         </tr>
       `;
     })
