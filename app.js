@@ -24,6 +24,7 @@ const el = {
   viewPanels: Array.from(document.querySelectorAll("[data-view-panel]")),
   phoneScanner: document.querySelector("#phoneScanner"),
   phoneCameraButton: document.querySelector("#phoneCameraButton"),
+  phoneModeButtons: Array.from(document.querySelectorAll("[data-scan-mode]")),
   phoneCameraReader: document.querySelector("#phoneCameraReader"),
   scannerOverlay: document.querySelector("#scannerOverlay"),
   phoneScanResult: document.querySelector("#phoneScanResult"),
@@ -31,6 +32,8 @@ const el = {
 
 let previousInventory = new Map();
 let phoneScanner = null;
+let phoneScanMode = "smart";
+let scanLocked = false;
 
 const dashboardViews = {
   inventory: {
@@ -79,6 +82,22 @@ function setDashboardView(view) {
   if (!isPhoneScannerView() && window.location.hash !== `#${selected}`) {
     history.replaceState(null, "", `#${selected}`);
   }
+}
+
+function setPhoneScanMode(mode) {
+  phoneScanMode = ["smart", "incoming", "outgoing"].includes(mode) ? mode : "smart";
+  el.phoneModeButtons.forEach((button) => {
+    const active = button.dataset.scanMode === phoneScanMode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+
+  const modeLabel = {
+    smart: "Active inventory",
+    incoming: "Incoming inventory",
+    outgoing: "Outgoing inventory",
+  }[phoneScanMode];
+  setStatus(`${modeLabel} mode selected. Tap Start camera.`);
 }
 
 function normalizeScan(value) {
@@ -295,9 +314,11 @@ async function scanProduct({ barcode, mode = "smart", description = "", cost = 0
       flash(el.historyPanel, "scan-success");
       flash(el.inventoryPanel, "inventory-updated");
     }
+    return result;
   } catch (error) {
     setStatus(error.message, "warn");
     flash(mode === "outgoing" || mode === "out" ? el.historyPanel : el.inventoryPanel, "scan-warning");
+    throw error;
   }
 }
 
@@ -323,7 +344,8 @@ async function togglePhoneCamera() {
     });
     el.phoneCameraButton.textContent = "Stop camera";
     el.scannerOverlay.hidden = false;
-    setStatus("Camera is on. Point it at a barcode or QR code.");
+    scanLocked = false;
+    setStatus("Camera is on. Point it at one barcode or QR code.");
 
     await phoneScanner.start(
       { facingMode: "environment" },
@@ -333,30 +355,52 @@ async function togglePhoneCamera() {
         aspectRatio: 1.333,
       },
       async (decodedText) => {
-        await scanProduct({
-          barcode: decodedText,
-          mode: "smart",
-          description: `Scanned network hardware ${normalizeScan(decodedText)}`,
-          quantity: 1,
-        });
+        if (scanLocked) return;
+        scanLocked = true;
+
+        const normalized = normalizeScan(decodedText);
+        setStatus(`Read ${normalized}. Updating ${scanModeLabel(phoneScanMode)}...`);
+
+        try {
+          await scanProduct({
+            barcode: decodedText,
+            mode: phoneScanMode,
+            description: `Scanned network hardware ${normalized}`,
+            quantity: 1,
+          });
+          if (navigator.vibrate) navigator.vibrate(160);
+          setStatus(`Scanned ${normalized}. Camera stopped so it will not scan twice.`, "ok");
+        } catch (error) {
+          if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
+          setStatus(error.message, "warn");
+        } finally {
+          await stopPhoneCamera({ silent: true });
+          scanLocked = false;
+        }
       }
     );
   } catch (error) {
     phoneScanner = null;
-    el.phoneCameraButton.textContent = "Camera";
+    el.phoneCameraButton.textContent = "Start camera";
     el.scannerOverlay.hidden = true;
     setStatus("Camera permission was blocked or unavailable.", "warn");
   }
 }
 
-async function stopPhoneCamera() {
+function scanModeLabel(mode) {
+  if (mode === "incoming") return "incoming inventory";
+  if (mode === "outgoing") return "outgoing inventory";
+  return "active inventory";
+}
+
+async function stopPhoneCamera(options = {}) {
   if (!phoneScanner) return;
   await phoneScanner.stop().catch(() => {});
   phoneScanner.clear();
   phoneScanner = null;
-  el.phoneCameraButton.textContent = "Camera";
+  el.phoneCameraButton.textContent = "Start camera";
   el.scannerOverlay.hidden = true;
-  setStatus("Camera stopped.");
+  if (!options.silent) setStatus("Camera stopped.");
 }
 
 function getSupportedPhoneFormats() {
@@ -458,6 +502,11 @@ el.entryModal.addEventListener("click", (event) => {
   if (event.target === el.entryModal) closeEntryModal();
 });
 el.phoneCameraButton.addEventListener("click", togglePhoneCamera);
+el.phoneModeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setPhoneScanMode(button.dataset.scanMode);
+  });
+});
 el.navButtons.forEach((button) => {
   button.addEventListener("click", () => setDashboardView(button.dataset.view));
 });
@@ -482,7 +531,7 @@ if (isPhoneScannerView()) {
 loadState()
   .then(() => {
     if (isPhoneScannerView()) {
-      setStatus("Ready to scan.");
+      setPhoneScanMode("smart");
       return;
     }
     const barcodeFromUrl = getBarcodeFromPageUrl();

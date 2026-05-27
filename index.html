@@ -6,7 +6,7 @@
     <title>Micas Network Inventory</title>
     <link rel="stylesheet" href="./styles.css" />
     <script src="./vendor/html5-qrcode.min.js" defer></script>
-    <script src="./app.js?v=micas-dark-history" defer></script>
+    <script src="./app.js?v=micas-scan-modes" defer></script>
   </head>
   <body>
     <main class="page">
@@ -57,7 +57,12 @@
         <div class="phone-card">
           <img class="phone-logo" src="./assets/micas-networks-logo.png" alt="Micas Networks" />
           <h1>Asset Scan</h1>
-          <button id="phoneCameraButton" type="button">Camera</button>
+          <div class="phone-mode-picker" aria-label="Scan mode">
+            <button class="active" type="button" data-scan-mode="smart">Active</button>
+            <button type="button" data-scan-mode="incoming">Incoming</button>
+            <button type="button" data-scan-mode="outgoing">Outgoing</button>
+          </div>
+          <button id="phoneCameraButton" type="button">Start camera</button>
           <div id="phoneCameraShell">
             <div id="phoneCameraReader"></div>
             <div id="scannerOverlay" hidden>

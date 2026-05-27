@@ -504,6 +504,28 @@ p {
   font-size: 1.05rem;
 }
 
+.phone-mode-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.phone-mode-picker button {
+  min-height: 44px;
+  border: 1px solid rgba(0, 191, 195, 0.18);
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #d8eeee;
+  box-shadow: none;
+}
+
+.phone-mode-picker button.active {
+  border-color: rgba(0, 191, 195, 0.62);
+  background: linear-gradient(135deg, rgba(0, 191, 195, 0.2), rgba(255, 183, 27, 0.12));
+  color: #fff;
+}
+
 #phoneCameraShell {
   position: relative;
   overflow: hidden;
