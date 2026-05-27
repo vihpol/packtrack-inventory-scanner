@@ -27,15 +27,20 @@
             <button type="button" data-view="history">Scan history</button>
           </nav>
 
-          <details class="demo-settings">
-            <summary>Settings</summary>
-            <section class="scanner-link-card" aria-label="Phone scanner link">
-              <span>Phone scanner</span>
-              <a id="phoneScannerLink" href="https://localhost:5443/scanner">Loading scanner link...</a>
-              <button id="copyScannerLinkButton" class="ghost-button" type="button">Copy link</button>
-            </section>
-            <button id="loadDemoButton" class="ghost-button" type="button">Load demo data</button>
-            <button id="resetDemoButton" class="ghost-button" type="button">Reset inventory</button>
+          <details class="sidebar-tools">
+            <summary aria-label="Open tools">
+              <span aria-hidden="true">⚙</span>
+              <span>Tools</span>
+            </summary>
+            <div class="tools-panel">
+              <section class="scanner-link-card" aria-label="Phone scanner link">
+                <span>Phone scanner</span>
+                <a id="phoneScannerLink" href="https://localhost:5443/scanner">Loading scanner link...</a>
+                <button id="copyScannerLinkButton" class="ghost-button" type="button">Copy link</button>
+              </section>
+              <button id="loadDemoButton" class="ghost-button" type="button">Load sample data</button>
+              <button id="resetDemoButton" class="ghost-button" type="button">Reset inventory</button>
+            </div>
           </details>
 
         </aside>
