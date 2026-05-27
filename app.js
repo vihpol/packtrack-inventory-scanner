@@ -273,7 +273,7 @@ function flash(element, className) {
 function renderState(data) {
   renderInventory(data.inventory || []);
   renderScanList(el.incomingLog, data.incoming || [], "No receiving activity");
-  renderScanList(el.outgoingLog, data.outgoing || [], "No issue activity");
+  renderScanList(el.outgoingLog, data.outgoing || [], "No incoming activity");
   renderMetrics(data);
   renderLastScan(data);
 }
