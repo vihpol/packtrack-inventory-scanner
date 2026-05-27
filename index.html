@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="./styles.css" />
     <script src="./vendor/html5-qrcode.min.js" defer></script>
     <script src="./app.js?v=demo-polish" defer></script>
+    <script src="./scanner-fix.js?v=dense-barcodes" defer></script>
   </head>
   <body>
     <main class="page">
@@ -79,6 +80,9 @@
             <button type="button" data-scan-mode="outgoing">Issue</button>
           </div>
           <button id="phoneCameraButton" type="button">Start camera</button>
+          <p class="scanner-help">
+            For switch labels, hold the phone 8–15 inches away, keep the barcode horizontal, and fit the full serial/MAC barcode inside the wide scan box.
+          </p>
           <div id="phoneCameraShell">
             <div id="phoneCameraReader"></div>
             <div id="scannerOverlay" hidden>
