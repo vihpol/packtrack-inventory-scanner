@@ -122,8 +122,8 @@ function sendSvg(res, svg) {
 }
 
 function getLanAddresses() {
-  return Object.values(os.networkInterfaces())
-    .flat()
+  return Object.keys(os.networkInterfaces())
+    .reduce((addresses, name) => addresses.concat(os.networkInterfaces()[name]), [])
     .filter((address) => {
       return address && address.family === "IPv4" && !address.internal;
     })
