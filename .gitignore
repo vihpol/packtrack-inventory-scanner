@@ -5,3 +5,4 @@ scan-demo.log
 scan-demo.err.log
 certs/
 node_modules/
+.public-url

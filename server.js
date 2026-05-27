@@ -12,6 +12,7 @@ const ROOT = __dirname;
 const DB_PATH = path.join(ROOT, "packtrack-db.json");
 const HTTPS_KEY_PATH = process.env.HTTPS_KEY_PATH || path.join(ROOT, "certs", "local-server.key");
 const HTTPS_CERT_PATH = process.env.HTTPS_CERT_PATH || path.join(ROOT, "certs", "local-server.crt");
+const PUBLIC_URL_PATH = path.join(ROOT, ".public-url");
 const MAX_BODY_BYTES = 1024 * 1024;
 let mutationQueue = Promise.resolve();
 
@@ -129,14 +130,24 @@ function getLanAddresses() {
     .map((address) => address.address);
 }
 
+function getPublicUrl() {
+  const fromEnv = String(process.env.PUBLIC_URL || "").trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, "");
+
+  if (!fs.existsSync(PUBLIC_URL_PATH)) return "";
+  return fs.readFileSync(PUBLIC_URL_PATH, "utf8").trim().replace(/\/$/, "");
+}
+
 function getNetworkInfo() {
   const addresses = getLanAddresses();
   const primaryAddress = addresses[0] || "localhost";
+  const publicUrl = getPublicUrl();
   return {
     addresses,
-    dashboardUrl: `http://${primaryAddress}:${PORT}`,
-    scannerUrl: `https://${primaryAddress}:${HTTPS_PORT}/scanner`,
+    dashboardUrl: publicUrl || `http://${primaryAddress}:${PORT}`,
+    scannerUrl: publicUrl ? `${publicUrl}/scanner` : `https://${primaryAddress}:${HTTPS_PORT}/scanner`,
     httpsPort: HTTPS_PORT,
+    publicUrl,
   };
 }
 
