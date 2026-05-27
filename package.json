@@ -3,6 +3,7 @@
     "demo": "node server.js",
     "start": "node server.js"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  }
 }

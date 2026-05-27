@@ -21,6 +21,7 @@ const el = {
   resetDemoButton: document.querySelector("#resetDemoButton"),
   phoneScannerLink: document.querySelector("#phoneScannerLink"),
   copyScannerLinkButton: document.querySelector("#copyScannerLinkButton"),
+  scannerQrCode: document.querySelector("#scannerQrCode"),
   status: document.querySelector("#status"),
   inventoryBody: document.querySelector("#inventoryBody"),
   incomingLog: document.querySelector("#incomingLog"),
@@ -418,9 +419,19 @@ async function loadNetworkInfo() {
     const info = await api("/api/network");
     el.phoneScannerLink.href = info.scannerUrl;
     el.phoneScannerLink.textContent = info.scannerUrl;
+    renderScannerQr(info.scannerUrl);
   } catch (error) {
     el.phoneScannerLink.textContent = "Scanner link unavailable";
+    el.scannerQrCode.textContent = "";
   }
+}
+
+function renderScannerQr(url) {
+  el.scannerQrCode.innerHTML = "";
+  const image = document.createElement("img");
+  image.src = `/api/scanner-qr.svg?refresh=${Date.now()}`;
+  image.alt = `QR code for ${url}`;
+  el.scannerQrCode.appendChild(image);
 }
 
 async function scanProduct({ barcode, mode = "smart", description = "", cost = 0, quantity = 1 }) {

@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const os = require("os");
+const QRCode = require("qrcode");
 
 const PORT = Number(process.env.PORT || 5173);
 const HTTPS_PORT = Number(process.env.HTTPS_PORT || 5443);
@@ -109,6 +110,14 @@ function sendJson(res, status, payload) {
 
 function sendError(res, status, message) {
   sendJson(res, status, { error: message });
+}
+
+function sendSvg(res, svg) {
+  res.writeHead(200, {
+    "Content-Type": "image/svg+xml",
+    "Cache-Control": "no-store",
+  });
+  res.end(svg);
 }
 
 function getLanAddresses() {
@@ -356,6 +365,20 @@ async function handleApi(req, res, url) {
 
   if (req.method === "GET" && url.pathname === "/api/network") {
     sendJson(res, 200, getNetworkInfo());
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/scanner-qr.svg") {
+    const svg = await QRCode.toString(getNetworkInfo().scannerUrl, {
+      type: "svg",
+      errorCorrectionLevel: "M",
+      margin: 2,
+      color: {
+        dark: "#07151c",
+        light: "#ffffff",
+      },
+    });
+    sendSvg(res, svg);
     return;
   }
 

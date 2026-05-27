@@ -251,6 +251,20 @@ code {
   gap: 9px;
 }
 
+.scanner-qr {
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+}
+
+.scanner-qr img {
+  display: block;
+  width: min(168px, 100%);
+  height: auto;
+}
+
 .scanner-link-card span {
   color: rgba(237, 246, 247, 0.72);
   font-size: 0.72rem;
