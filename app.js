@@ -2,7 +2,6 @@ const el = {
   productForm: document.querySelector("#productForm"),
   productBarcode: document.querySelector("#productBarcode"),
   productDescription: document.querySelector("#productDescription"),
-  productCost: document.querySelector("#productCost"),
   productQuantity: document.querySelector("#productQuantity"),
   addProductButton: document.querySelector("#addProductButton"),
   openEntryModalButton: document.querySelector("#openEntryModalButton"),
@@ -421,11 +420,11 @@ async function addProduct(event) {
 
   const barcode = normalizeScan(el.productBarcode.value);
   const description = el.productDescription.value.trim();
-  const cost = Number(el.productCost.value);
+  const cost = 0;
   const quantity = Number(el.productQuantity.value);
 
-  if (!barcode || !description || !Number.isFinite(cost) || !Number.isFinite(quantity) || cost < 0 || quantity < 0) {
-    setStatus("Enter equipment label, model/configuration, cost, and units.", "warn");
+  if (!barcode || !description || !Number.isFinite(quantity) || quantity < 0) {
+    setStatus("Enter equipment label, model/configuration, and units.", "warn");
     flash(el.inventoryPanel, "scan-warning");
     return;
   }
@@ -440,7 +439,6 @@ async function addProduct(event) {
     });
     renderState(data);
     el.productForm.reset();
-    el.productCost.value = "0";
     el.productQuantity.value = "1";
     closeEntryModal();
     setStatus(`${description} was added to hardware stock.`, "ok");
