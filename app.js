@@ -8,6 +8,9 @@ const el = {
   closeEntryModalButton: document.querySelector("#closeEntryModalButton"),
   cancelEntryModalButton: document.querySelector("#cancelEntryModalButton"),
   entryModal: document.querySelector("#entryModal"),
+  dashboardAlert: document.querySelector("#dashboardAlert"),
+  dashboardAlertMessage: document.querySelector("#dashboardAlertMessage"),
+  closeDashboardAlertButton: document.querySelector("#closeDashboardAlertButton"),
   status: document.querySelector("#status"),
   inventoryBody: document.querySelector("#inventoryBody"),
   incomingLog: document.querySelector("#incomingLog"),
@@ -33,6 +36,10 @@ let previousInventory = new Map();
 let phoneScanner = null;
 let phoneScanMode = "smart";
 let scanLocked = false;
+let latestActivityId = "";
+let dashboardAlertTimer = null;
+let dashboardPollTimer = null;
+let scanAudioContext = null;
 
 const dashboardViews = {
   inventory: {
@@ -97,6 +104,40 @@ function setPhoneScanMode(mode) {
     outgoing: "Issue",
   }[phoneScanMode];
   setStatus(`${modeLabel} mode selected`);
+}
+
+function primeScanAudio() {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+
+  if (!scanAudioContext) {
+    scanAudioContext = new AudioContext();
+  }
+  if (scanAudioContext.state === "suspended") {
+    scanAudioContext.resume().catch(() => {});
+  }
+}
+
+function playScanPing(tone = "ok") {
+  if (!isPhoneScannerView()) return;
+  primeScanAudio();
+  if (!scanAudioContext) return;
+
+  const now = scanAudioContext.currentTime;
+  const oscillator = scanAudioContext.createOscillator();
+  const gain = scanAudioContext.createGain();
+  const frequency = tone === "warn" ? 260 : 880;
+
+  oscillator.type = "sine";
+  oscillator.frequency.setValueAtTime(frequency, now);
+  oscillator.frequency.exponentialRampToValueAtTime(tone === "warn" ? 180 : 1320, now + 0.12);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.18, now + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+  oscillator.connect(gain);
+  gain.connect(scanAudioContext.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.2);
 }
 
 function normalizeScan(value) {
@@ -204,6 +245,40 @@ function renderState(data) {
   renderScanList(el.outgoingLog, data.outgoing || [], "No issue activity");
 }
 
+function showDashboardAlert(message) {
+  if (isPhoneScannerView()) return;
+
+  window.clearTimeout(dashboardAlertTimer);
+  el.dashboardAlertMessage.textContent = message;
+  el.dashboardAlert.hidden = false;
+  dashboardAlertTimer = window.setTimeout(closeDashboardAlert, 9000);
+}
+
+function closeDashboardAlert() {
+  window.clearTimeout(dashboardAlertTimer);
+  el.dashboardAlert.hidden = true;
+}
+
+function processDashboardActivity(activity, options = {}) {
+  if (isPhoneScannerView() || !Array.isArray(activity) || activity.length === 0) return;
+
+  const latest = activity[0];
+  if (!latestActivityId) {
+    latestActivityId = latest.id;
+    return;
+  }
+  if (!latest.id || latest.id === latestActivityId) return;
+
+  latestActivityId = latest.id;
+  if (options.silent) return;
+
+  if (latest.type === "Unknown outgoing scan") {
+    showDashboardAlert(`${latest.details}. Item was not issued.`);
+  } else if (latest.type === "Rejected outgoing scan") {
+    showDashboardAlert(latest.details);
+  }
+}
+
 function renderInventory(items) {
   if (items.length === 0) {
     el.inventoryBody.innerHTML = `
@@ -258,10 +333,12 @@ function renderScanList(container, entries, emptyText) {
     .join("");
 }
 
-async function loadState() {
+async function loadState(options = {}) {
   try {
     const data = await api("/api/state");
     renderState(data);
+    processDashboardActivity(data.activity, options);
+    return data;
   } catch (error) {
     throw error;
   }
@@ -292,6 +369,7 @@ async function scanProduct({ barcode, mode = "smart", description = "", cost = 0
       flash(el.inventoryPanel, "inventory-updated");
     } else if (result.matched === false) {
       setStatus(`${normalized} not found in stock`, "warn");
+      showDashboardAlert(`${normalized} is not in stock. Item was not issued.`);
       flash(el.historyPanel, "scan-warning");
     } else {
       setStatus(`${normalized} issued`, "ok");
@@ -311,6 +389,8 @@ async function togglePhoneCamera() {
     await stopPhoneCamera();
     return;
   }
+
+  primeScanAudio();
 
   if (!window.isSecureContext || !navigator.mediaDevices) {
     setStatus("Camera needs HTTPS. Open the localtunnel HTTPS URL on your phone.", "warn");
@@ -346,15 +426,23 @@ async function togglePhoneCamera() {
         setStatus(`${normalized} detected`);
 
         try {
-          await scanProduct({
+          const result = await scanProduct({
             barcode: decodedText,
             mode: phoneScanMode,
             description: `Scanned item ${normalized}`,
             quantity: 1,
           });
-          if (navigator.vibrate) navigator.vibrate(160);
-          setStatus(`${normalized} saved`, "ok");
+          if (result && result.matched === false) {
+            playScanPing("warn");
+            if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
+            setStatus(`${normalized} not found`, "warn");
+          } else {
+            playScanPing("ok");
+            if (navigator.vibrate) navigator.vibrate(160);
+            setStatus(`${normalized} saved`, "ok");
+          }
         } catch (error) {
+          playScanPing("warn");
           if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
           setStatus(error.message, "warn");
         } finally {
@@ -484,9 +572,11 @@ el.cancelEntryModalButton.addEventListener("click", closeEntryModal);
 el.entryModal.addEventListener("click", (event) => {
   if (event.target === el.entryModal) closeEntryModal();
 });
+el.closeDashboardAlertButton.addEventListener("click", closeDashboardAlert);
 el.phoneCameraButton.addEventListener("click", togglePhoneCamera);
 el.phoneModeButtons.forEach((button) => {
   button.addEventListener("click", () => {
+    primeScanAudio();
     setPhoneScanMode(button.dataset.scanMode);
   });
 });
@@ -511,12 +601,15 @@ if (isPhoneScannerView()) {
   setDashboardView(window.location.hash.replace("#", ""));
 }
 
-loadState()
+loadState({ silent: true })
   .then(() => {
     if (isPhoneScannerView()) {
       setPhoneScanMode("smart");
       return;
     }
+    dashboardPollTimer = window.setInterval(() => {
+      loadState().catch((error) => setStatus(error.message, "warn"));
+    }, 1200);
     const barcodeFromUrl = getBarcodeFromPageUrl();
     if (barcodeFromUrl) {
       scanProduct({
