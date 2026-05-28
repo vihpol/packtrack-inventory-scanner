@@ -297,6 +297,21 @@ code {
   text-decoration: underline;
 }
 
+.scanner-link-banner {
+  grid-template-columns: auto minmax(260px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(0, 191, 195, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 183, 27, 0.08);
+  padding: 12px 14px;
+}
+
+.scanner-link-banner .ghost-button {
+  min-height: 38px;
+  white-space: nowrap;
+}
+
 .sidebar-tools button {
   width: 100%;
   min-height: 36px;

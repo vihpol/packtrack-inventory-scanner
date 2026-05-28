@@ -35,11 +35,6 @@
               <span>Tools</span>
             </summary>
             <div class="tools-panel">
-              <section class="scanner-link-card" aria-label="Phone scanner link">
-                <span>Phone scanner</span>
-                <a id="phoneScannerLink" href="https://localhost:5443/scanner">Loading scanner link...</a>
-                <button id="copyScannerLinkButton" class="ghost-button" type="button">Copy link</button>
-              </section>
               <button id="loadDemoButton" class="ghost-button" type="button">Load sample data</button>
               <button id="resetDemoButton" class="ghost-button" type="button">Reset inventory</button>
             </div>
@@ -136,6 +131,12 @@
         <section class="hardware-scan-card" aria-label="Hardware scanner capture">
           <span>Hardware scanner</span>
           <input id="hardwareScanInput" class="hardware-scan-field" autocomplete="off" inputmode="none" placeholder="Ready for USB / Bluetooth scanner" />
+        </section>
+
+        <section class="scanner-link-card scanner-link-banner" aria-label="Phone scanner link">
+          <span>Phone scanner</span>
+          <a id="phoneScannerLink" href="https://localhost:5443/scanner">Loading scanner link...</a>
+          <button id="copyScannerLinkButton" class="ghost-button" type="button">Copy link</button>
         </section>
 
         <article id="inventoryPanel" class="sheet-section" data-view-panel="inventory">
