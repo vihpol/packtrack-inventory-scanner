@@ -5,6 +5,7 @@ const path = require("path");
 const crypto = require("crypto");
 const os = require("os");
 const util = require("util");
+const childProcess = require("child_process");
 const QRCode = require("qrcode");
 
 if (typeof global.TextEncoder === "undefined" && util.TextEncoder) {
@@ -475,10 +476,128 @@ function cleanAnalysisResult(result) {
   };
 }
 
+function execFile(command, args, options = {}) {
+  return new Promise((resolve) => {
+    childProcess.execFile(command, args, { timeout: 15000, ...options }, (error, stdout, stderr) => {
+      resolve({
+        ok: !error,
+        stdout: String(stdout || ""),
+        stderr: String(stderr || ""),
+        error,
+      });
+    });
+  });
+}
+
+function parseImageDataUrl(image) {
+  const match = String(image || "").match(/^data:image\/(png|jpe?g|webp);base64,([\s\S]+)$/i);
+  if (!match) {
+    throw new Error("Upload a PNG, JPEG, or WebP label photo");
+  }
+  const ext = match[1].toLowerCase().replace("jpeg", "jpg");
+  return {
+    ext,
+    buffer: Buffer.from(match[2], "base64"),
+  };
+}
+
+function barcodeCandidatesFromText(text) {
+  return String(text || "")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/[^A-Za-z0-9._-]/g, "").trim())
+    .filter((line) => line.length >= 6)
+    .sort((a, b) => b.length - a.length);
+}
+
+function descriptionFromOcr(text, barcode) {
+  const lines = String(text || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const modelLine =
+    lines.find((line) => /S\d{4}|N\d{4}|switch|router|optic|transceiver/i.test(line));
+  if (modelLine) return modelLine.replace(/\s+/g, " ").slice(0, 90);
+  return barcode ? "Network equipment label" : "Scanned label";
+}
+
+function removeDirSafe(dirPath) {
+  if (fs.rmSync) {
+    fs.rmSync(dirPath, { recursive: true, force: true });
+    return;
+  }
+  if (!fs.existsSync(dirPath)) return;
+  fs.readdirSync(dirPath).forEach((entry) => {
+    const entryPath = path.join(dirPath, entry);
+    const stat = fs.lstatSync(entryPath);
+    if (stat.isDirectory()) {
+      removeDirSafe(entryPath);
+    } else {
+      fs.unlinkSync(entryPath);
+    }
+  });
+  fs.rmdirSync(dirPath);
+}
+
+async function localLabelAnalysis(image) {
+  const parsed = parseImageDataUrl(image);
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "packtrack-label-"));
+  const originalPath = path.join(tempDir, `label.${parsed.ext}`);
+  fs.writeFileSync(originalPath, parsed.buffer);
+
+  try {
+    const variants = [
+      originalPath,
+      path.join(tempDir, "label-90.png"),
+      path.join(tempDir, "label-270.png"),
+      path.join(tempDir, "label-180.png"),
+      path.join(tempDir, "label-contrast.png"),
+    ];
+
+    await execFile("convert", [originalPath, "-auto-orient", "-rotate", "90", variants[1]]);
+    await execFile("convert", [originalPath, "-auto-orient", "-rotate", "270", variants[2]]);
+    await execFile("convert", [originalPath, "-auto-orient", "-rotate", "180", variants[3]]);
+    await execFile("convert", [
+      originalPath,
+      "-auto-orient",
+      "-colorspace",
+      "Gray",
+      "-normalize",
+      "-sharpen",
+      "0x1",
+      variants[4],
+    ]);
+
+    const decoded = [];
+    for (const filePath of variants) {
+      if (!fs.existsSync(filePath)) continue;
+      const result = await execFile("zbarimg", ["--raw", "-q", filePath]);
+      barcodeCandidatesFromText(result.stdout).forEach((candidate) => decoded.push(candidate));
+    }
+
+    let ocrText = "";
+    const ocrImage = path.join(tempDir, "ocr.png");
+    await execFile("convert", [originalPath, "-auto-orient", "-colorspace", "Gray", "-normalize", "-resize", "2200x2200>", ocrImage]);
+    const ocr = await execFile("tesseract", [ocrImage, "stdout", "--psm", "6"]);
+    ocrText = ocr.stdout;
+
+    const candidates = decoded.concat(barcodeCandidatesFromText(ocrText));
+    const barcode = normalizeBarcode(candidates[0] || "");
+    return {
+      barcode,
+      description: descriptionFromOcr(ocrText, barcode),
+      quantity: 1,
+      confidence: decoded.length ? "barcode decoded locally" : "OCR estimate",
+      notes: decoded.length ? "Decoded with local zbar barcode reader." : "No barcode decoded; used local OCR text.",
+    };
+  } finally {
+    removeDirSafe(tempDir);
+  }
+}
+
 async function analyzeLabelPhoto(image) {
   const apiKey = String(process.env.OPENAI_API_KEY || "").trim();
   if (!apiKey) {
-    throw new Error("OPENAI_API_KEY is not set on the VM server");
+    return localLabelAnalysis(image);
   }
   if (!/^data:image\/(png|jpe?g|webp);base64,/i.test(String(image || ""))) {
     throw new Error("Upload a PNG, JPEG, or WebP label photo");
