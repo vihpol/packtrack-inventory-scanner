@@ -6,7 +6,7 @@
     <title>Micas Inventory</title>
     <link rel="stylesheet" href="./styles.css" />
     <script src="./vendor/html5-qrcode.min.js" defer></script>
-    <script src="./app.js?v=label-ai" defer></script>
+    <script src="./app.js?v=auto-label-ai" defer></script>
     <script src="./scanner-fix.js?v=photo-scan" defer></script>
     <script src="./qr-fix.js?v=qr-fallback" defer></script>
   </head>
@@ -212,11 +212,11 @@
             <div class="label-analyzer">
               <div>
                 <strong>Label photo</strong>
-                <span id="labelAnalysisStatus">Optional: take a photo to prefill this entry.</span>
+                <span id="labelAnalysisStatus">Take or choose a photo to prefill this entry.</span>
               </div>
               <label class="ghost-button" for="labelPhotoInput">Choose photo</label>
               <input id="labelPhotoInput" class="photo-scan-input" type="file" accept="image/*" capture="environment" />
-              <button id="analyzeLabelButton" class="ghost-button" type="button" disabled>Analyze</button>
+              <button id="analyzeLabelButton" class="ghost-button" type="button" disabled>Re-analyze</button>
             </div>
             <label class="serial-field">
               SKU / Serial

@@ -660,6 +660,9 @@ function handleLabelPhotoSelected() {
   selectedLabelPhoto = el.labelPhotoInput.files && el.labelPhotoInput.files[0];
   el.analyzeLabelButton.disabled = !selectedLabelPhoto;
   setLabelAnalysisStatus(selectedLabelPhoto ? selectedLabelPhoto.name : "Optional: take a photo to prefill this entry.");
+  if (selectedLabelPhoto) {
+    analyzeLabelPhoto();
+  }
 }
 
 async function analyzeLabelPhoto() {
