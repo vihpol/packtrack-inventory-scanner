@@ -520,6 +520,21 @@ function descriptionFromOcr(text, barcode) {
   return barcode ? "Network equipment label" : "Scanned label";
 }
 
+async function makeImageVariant(inputPath, outputPath, operations) {
+  const result = await execFile("convert", [inputPath, "-auto-orient"].concat(operations, [outputPath]));
+  return result.ok && fs.existsSync(outputPath);
+}
+
+async function decodeBarcodeFile(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  const result = await execFile("zbarimg", ["--raw", "-q", filePath], { timeout: 6000 });
+  return barcodeCandidatesFromText(result.stdout);
+}
+
+function uniqueValues(values) {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
 function removeDirSafe(dirPath) {
   if (fs.rmSync) {
     fs.rmSync(dirPath, { recursive: true, force: true });
@@ -545,42 +560,42 @@ async function localLabelAnalysis(image) {
   fs.writeFileSync(originalPath, parsed.buffer);
 
   try {
-    const variants = [
-      originalPath,
-      path.join(tempDir, "label-90.png"),
-      path.join(tempDir, "label-270.png"),
-      path.join(tempDir, "label-180.png"),
-      path.join(tempDir, "label-contrast.png"),
+    const decoded = [];
+    const variantSpecs = [
+      ["original.png", []],
+      ["gray.png", ["-colorspace", "Gray", "-normalize"]],
+      ["large.png", ["-resize", "3600x3600>", "-colorspace", "Gray", "-normalize", "-sharpen", "0x1.2"]],
+      ["deskew.png", ["-resize", "3600x3600>", "-colorspace", "Gray", "-normalize", "-deskew", "40%", "-sharpen", "0x1"]],
+      ["threshold-55.png", ["-resize", "3600x3600>", "-colorspace", "Gray", "-normalize", "-threshold", "55%"]],
+      ["adaptive.png", ["-resize", "3600x3600>", "-colorspace", "Gray", "-normalize", "-lat", "28x28+8%"]],
+      ["contrast.png", ["-resize", "3600x3600>", "-colorspace", "Gray", "-contrast-stretch", "2%x2%", "-sharpen", "0x1.4"]],
     ];
 
-    await execFile("convert", [originalPath, "-auto-orient", "-rotate", "90", variants[1]]);
-    await execFile("convert", [originalPath, "-auto-orient", "-rotate", "270", variants[2]]);
-    await execFile("convert", [originalPath, "-auto-orient", "-rotate", "180", variants[3]]);
-    await execFile("convert", [
-      originalPath,
-      "-auto-orient",
-      "-colorspace",
-      "Gray",
-      "-normalize",
-      "-sharpen",
-      "0x1",
-      variants[4],
-    ]);
-
-    const decoded = [];
-    for (const filePath of variants) {
-      if (!fs.existsSync(filePath)) continue;
-      const result = await execFile("zbarimg", ["--raw", "-q", filePath]);
-      barcodeCandidatesFromText(result.stdout).forEach((candidate) => decoded.push(candidate));
+    for (const spec of variantSpecs) {
+      const basePath = path.join(tempDir, spec[0]);
+      if (await makeImageVariant(originalPath, basePath, spec[1])) {
+        decoded.push(...await decodeBarcodeFile(basePath));
+        if (decoded.length) break;
+      }
+      for (const degrees of ["90", "180", "270"]) {
+        const rotatedPath = path.join(tempDir, `${path.basename(spec[0], ".png")}-${degrees}.png`);
+        if (await makeImageVariant(basePath, rotatedPath, ["-rotate", degrees])) {
+          decoded.push(...await decodeBarcodeFile(rotatedPath));
+          if (decoded.length) break;
+        }
+      }
+      if (decoded.length) break;
     }
 
     let ocrText = "";
-    const ocrImage = path.join(tempDir, "ocr.png");
-    await execFile("convert", [originalPath, "-auto-orient", "-colorspace", "Gray", "-normalize", "-resize", "2200x2200>", ocrImage]);
-    const ocr = await execFile("tesseract", [ocrImage, "stdout", "--psm", "6"]);
-    ocrText = ocr.stdout;
+    if (!decoded.length) {
+      const ocrImage = path.join(tempDir, "ocr.png");
+      await execFile("convert", [originalPath, "-auto-orient", "-colorspace", "Gray", "-normalize", "-resize", "3200x3200>", ocrImage]);
+      const ocr = await execFile("tesseract", [ocrImage, "stdout", "--psm", "6"]);
+      ocrText = ocr.stdout;
+    }
 
-    const candidates = decoded.concat(barcodeCandidatesFromText(ocrText));
+    const candidates = uniqueValues(decoded).concat(barcodeCandidatesFromText(ocrText));
     const barcode = normalizeBarcode(candidates[0] || "");
     return {
       barcode,
