@@ -165,15 +165,24 @@
       });
     }
 
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 20000);
     const response = await fetch("/api/scan-product", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
       body: JSON.stringify({
         barcode,
         mode: selectedMode(),
         quantity: 1,
       }),
+    }).catch((error) => {
+      if (error.name === "AbortError") {
+        throw new Error("Inventory update timed out. Check Wi-Fi, then scan again.");
+      }
+      throw new Error("Inventory server is unreachable.");
     });
+    window.clearTimeout(timeout);
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || "Scan failed");
     return data;

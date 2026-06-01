@@ -213,7 +213,7 @@ async function api(path, options = {}) {
     ...requestOptions,
   }).catch((error) => {
     if (error.name === "AbortError") {
-      throw new Error("Inventory server did not respond. Check the network or backend.");
+      throw new Error("Inventory update timed out. Check Wi-Fi, then scan again.");
     }
     throw new Error("Inventory server is unreachable.");
   });
@@ -431,6 +431,7 @@ async function scanProduct({ barcode, mode = "smart", description = "", cost = 0
   try {
     const result = await api("/api/scan-product", {
       method: "POST",
+      timeout: 20000,
       body: JSON.stringify({
         barcode: normalized,
         mode,
