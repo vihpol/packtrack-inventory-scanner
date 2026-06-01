@@ -796,6 +796,9 @@ function serveStatic(req, res, url) {
       ".css": "text/css",
       ".js": "text/javascript",
       ".json": "application/json",
+      ".wasm": "application/wasm",
+      ".xml": "application/xml",
+      ".data": "application/octet-stream",
     }[ext] || "application/octet-stream";
 
     res.writeHead(200, {

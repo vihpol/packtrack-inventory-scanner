@@ -8,6 +8,7 @@
   if (!button || !readerElement || !window.location.pathname.endsWith("/scanner")) return;
 
   let scanner = null;
+  let dynamsoftScanner = null;
   let scanLocked = false;
 
   function setScannerStatus(message, tone = "") {
@@ -93,6 +94,68 @@
     return [error.name, error.message].filter(Boolean).join(": ") || String(error);
   }
 
+  async function createDynamsoftScanner() {
+    const dynamsoft = window.Dynamsoft;
+    const licenseKey = window.DYNAMSOFT_LICENSE_KEY || "";
+
+    if (!dynamsoft || !dynamsoft.BarcodeScanner) return null;
+
+    return new dynamsoft.BarcodeScanner({
+      license: licenseKey,
+      scanMode: dynamsoft.EnumScanMode ? dynamsoft.EnumScanMode.SM_SINGLE : undefined,
+      container: readerElement,
+      showResultView: false,
+      showUploadImageButton: true,
+      showPoweredByDynamsoft: true,
+      duplicateForgetTime: 1800,
+      scannerViewConfig: {
+        container: readerElement,
+        cameraSwitchControl: "toggleFrontBack",
+        showFlashButton: true,
+      },
+    });
+  }
+
+  async function startDynamsoftScanner() {
+    const dynamsoft = window.Dynamsoft;
+    if (!dynamsoft || !dynamsoft.BarcodeScanner) return false;
+
+    setScannerStatus("Starting commercial barcode scanner...");
+    dynamsoftScanner = await createDynamsoftScanner();
+    if (!dynamsoftScanner) return false;
+
+    let handledScan = false;
+    const onDecoded = async (result) => {
+      const barcodeResult =
+        (result && result.barcodeResultItems && result.barcodeResultItems[0]) ||
+        (result && result.barcodeResults && result.barcodeResults[0]) ||
+        result;
+      const decodedText =
+        (barcodeResult && (barcodeResult.text || barcodeResult.barcodeText || barcodeResult.decodedText)) ||
+        (typeof result === "string" ? result : "");
+
+      if (!decodedText) return;
+      handledScan = true;
+      await handleDecoded(decodedText, result);
+    };
+
+    button.textContent = "Stop camera";
+    if (overlay) overlay.hidden = false;
+    setScannerStatus("Scanner active. Fill the frame with the full label barcode.");
+
+    if (typeof dynamsoftScanner.launch === "function") {
+      const result = await dynamsoftScanner.launch();
+      await onDecoded(result);
+      if (!handledScan) {
+        await stopScanner({ silent: true });
+        setScannerStatus("No barcode detected. Try a closer, brighter photo or use the hardware scanner.", "warn");
+      }
+      return true;
+    }
+
+    return false;
+  }
+
   async function postScan(barcode) {
     if (typeof window.scanProduct === "function") {
       return window.scanProduct({
@@ -117,6 +180,21 @@
   }
 
   async function stopScanner({ silent = false } = {}) {
+    if (dynamsoftScanner) {
+      if (typeof dynamsoftScanner.hide === "function") {
+        await dynamsoftScanner.hide().catch(() => {});
+      }
+      if (typeof dynamsoftScanner.close === "function") {
+        await dynamsoftScanner.close().catch(() => {});
+      }
+      if (typeof dynamsoftScanner.destroy === "function") {
+        await dynamsoftScanner.destroy().catch(() => {});
+      }
+      dynamsoftScanner = null;
+      button.textContent = "Start camera";
+      if (overlay) overlay.hidden = true;
+      if (!silent) setScannerStatus("Scanner stopped");
+    }
     if (!scanner) return;
     await scanner.stop().catch(() => {});
     scanner.clear();
@@ -286,10 +364,21 @@
       await stopScanner();
       return;
     }
+    if (dynamsoftScanner) {
+      await stopScanner();
+      return;
+    }
 
     try {
       if (typeof window.primeScanAudio === "function") window.primeScanAudio();
-      await startScanner();
+      const startedDynamsoft = await startDynamsoftScanner().catch((error) => {
+        console.warn("Dynamsoft start failed, falling back to html5-qrcode:", error);
+        setScannerStatus("Commercial scanner unavailable. Trying backup scanner...", "warn");
+        return false;
+      });
+      if (!startedDynamsoft) {
+        await startScanner();
+      }
     } catch (error) {
       scanner = null;
       button.textContent = "Start camera";
