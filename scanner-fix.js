@@ -156,11 +156,36 @@
     return false;
   }
 
-  async function postScan(barcode) {
+  function imageFileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        image.onload = () => {
+          const maxSide = 3600;
+          const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(image.width * scale));
+          canvas.height = Math.max(1, Math.round(image.height * scale));
+          const context = canvas.getContext("2d");
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", 0.95));
+        };
+        image.onerror = () => reject(new Error("Could not read that photo"));
+        image.src = reader.result;
+      };
+      reader.onerror = () => reject(new Error("Could not load that photo"));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function postScan(barcode, details = {}) {
     if (typeof window.scanProduct === "function") {
       return window.scanProduct({
         barcode,
         mode: selectedMode(),
+        description: details.description || "",
         quantity: 1,
       });
     }
@@ -174,6 +199,7 @@
       body: JSON.stringify({
         barcode,
         mode: selectedMode(),
+        description: details.description || "",
         quantity: 1,
       }),
     }).catch((error) => {
@@ -213,7 +239,7 @@
     if (!silent) setScannerStatus("Scanner stopped");
   }
 
-  async function handleDecoded(decodedText, decodedResult) {
+  async function handleDecoded(decodedText, decodedResult, details = {}) {
     if (scanLocked) return;
     scanLocked = true;
 
@@ -230,7 +256,7 @@
     setScannerStatus(`${normalized} detected`);
 
     try {
-      const result = await postScan(decodedText);
+      const result = await postScan(decodedText, details);
       if (result && result.matched === false) {
         if (typeof window.playScanPing === "function") window.playScanPing("warn");
         if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
@@ -333,32 +359,41 @@
 
   async function scanPhoto(file) {
     if (!file) return;
-    if (!window.Html5Qrcode) {
-      setScannerStatus("Scanner library is still loading. Try again.", "warn");
-      return;
-    }
 
     if (scanner) {
       await stopScanner({ silent: true });
     }
+    if (dynamsoftScanner) {
+      await stopScanner({ silent: true });
+    }
 
-    scanner = createScanner();
     button.textContent = "Start camera";
     if (overlay) overlay.hidden = true;
-    setScannerStatus("Reading photo...");
+    setScannerStatus("Sending photo to VM decoder...");
 
     try {
-      const result = await scanner.scanFileV2(file, true);
-      const decodedText = result && (result.decodedText || result.text || result);
-      if (!decodedText) {
+      const image = await imageFileToDataUrl(file);
+      const response = await fetch("/api/analyze-label", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image }),
+      });
+      const analysis = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(analysis.error || "Photo analyzer failed");
+      }
+      if (!analysis.barcode) {
         throw new Error("No barcode found in photo");
       }
-      await handleDecoded(decodedText, result);
+      setScannerStatus(`${normalize(analysis.barcode)} decoded by VM`);
+      await handleDecoded(analysis.barcode, analysis, {
+        description: analysis.description || "",
+      });
     } catch (error) {
       console.error("Photo scan failed:", error);
       if (typeof window.playScanPing === "function") window.playScanPing("warn");
       if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
-      setScannerStatus("Photo did not read. Fill the photo with the full barcode and keep it sharp.", "warn");
+      setScannerStatus(error.message || "Photo did not read. Fill the photo with the full barcode and keep it sharp.", "warn");
       await stopScanner({ silent: true });
     } finally {
       if (photoInput) photoInput.value = "";
