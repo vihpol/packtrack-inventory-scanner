@@ -31,7 +31,8 @@
 
   function selectedMode() {
     const active = document.querySelector("[data-scan-mode].active");
-    return active && active.dataset ? active.dataset.scanMode : "smart";
+    const mode = active && active.dataset ? active.dataset.scanMode : "incoming";
+    return mode === "outgoing" ? "outgoing" : "incoming";
   }
 
   function supportedFormats() {

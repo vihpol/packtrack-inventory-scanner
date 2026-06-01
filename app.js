@@ -47,7 +47,7 @@ const el = {
 
 let previousInventory = new Map();
 let phoneScanner = null;
-let phoneScanMode = "smart";
+let phoneScanMode = "incoming";
 let scanLocked = false;
 let latestActivityId = "";
 let dashboardAlertTimer = null;
@@ -107,7 +107,7 @@ function setDashboardView(view) {
 }
 
 function setPhoneScanMode(mode) {
-  phoneScanMode = ["smart", "incoming", "outgoing"].includes(mode) ? mode : "smart";
+  phoneScanMode = ["incoming", "outgoing"].includes(mode) ? mode : "incoming";
   el.phoneModeButtons.forEach((button) => {
     const active = button.dataset.scanMode === phoneScanMode;
     button.classList.toggle("active", active);
@@ -115,7 +115,6 @@ function setPhoneScanMode(mode) {
   });
 
   const modeLabel = {
-    smart: "Stock",
     incoming: "Receive",
     outgoing: "Issue",
   }[phoneScanMode];
@@ -179,8 +178,8 @@ function normalizeScan(value) {
 
 function getScanModeFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  const mode = String(params.get("mode") || params.get("action") || "smart").toLowerCase();
-  return ["incoming", "in", "outgoing", "out"].includes(mode) ? mode : "smart";
+  const mode = String(params.get("mode") || params.get("action") || "incoming").toLowerCase();
+  return ["outgoing", "out"].includes(mode) ? "outgoing" : "incoming";
 }
 
 function getBarcodeFromPageUrl() {
@@ -881,7 +880,7 @@ if (isPhoneScannerView()) {
 loadState({ silent: true })
   .then(() => {
     if (isPhoneScannerView()) {
-      setPhoneScanMode("smart");
+      setPhoneScanMode(getScanModeFromUrl());
       focusHardwareScanner();
       return;
     }
