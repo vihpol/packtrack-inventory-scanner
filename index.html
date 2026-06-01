@@ -133,12 +133,6 @@
           <input id="hardwareScanInput" class="hardware-scan-field" autocomplete="off" inputmode="none" placeholder="Ready for USB / Bluetooth scanner" />
         </section>
 
-        <section class="scanner-link-card scanner-link-banner" aria-label="Phone scanner link">
-          <span>Phone scanner</span>
-          <a id="phoneScannerLink" href="https://localhost:5443/scanner">Loading scanner link...</a>
-          <button id="copyScannerLinkButton" class="ghost-button" type="button">Copy link</button>
-        </section>
-
         <article id="inventoryPanel" class="sheet-section" data-view-panel="inventory">
           <div class="section-heading">
             <h3>Stock on hand</h3>
@@ -211,10 +205,10 @@
           <form id="productForm" class="modal-form">
             <div class="label-analyzer">
               <div>
-                <strong>Label photo</strong>
-                <span id="labelAnalysisStatus">Take or choose a photo to prefill this entry.</span>
+                <strong>Scan label photo</strong>
+                <span id="labelAnalysisStatus">Take or choose a label photo to fill this entry.</span>
               </div>
-              <label class="ghost-button" for="labelPhotoInput">Choose photo</label>
+              <label class="ghost-button" for="labelPhotoInput">Scan photo</label>
               <input id="labelPhotoInput" class="photo-scan-input" type="file" accept="image/*" capture="environment" />
               <button id="analyzeLabelButton" class="ghost-button" type="button" disabled>Re-analyze</button>
             </div>
