@@ -182,12 +182,13 @@
   }
 
   async function postScan(barcode, details = {}) {
+    const quantity = Math.max(1, Number(details.quantity || 1));
     if (typeof window.scanProduct === "function") {
       return window.scanProduct({
         barcode,
         mode: selectedMode(),
         description: details.description || "",
-        quantity: 1,
+        quantity,
       });
     }
 
@@ -201,7 +202,7 @@
         barcode,
         mode: selectedMode(),
         description: details.description || "",
-        quantity: 1,
+        quantity,
       }),
     }).catch((error) => {
       if (error.name === "AbortError") {
@@ -265,7 +266,9 @@
       } else {
         if (typeof window.playScanPing === "function") window.playScanPing("ok");
         if (navigator.vibrate) navigator.vibrate(160);
-        setScannerStatus(`${normalized} saved`, "ok");
+        const quantity = Math.max(1, Number(details.quantity || 1));
+        const delta = selectedMode() === "outgoing" ? "-1" : `+${quantity}`;
+        setScannerStatus(`${normalized} saved (${delta})`, "ok");
       }
     } catch (error) {
       if (typeof window.playScanPing === "function") window.playScanPing("warn");
@@ -389,6 +392,7 @@
       setScannerStatus(`${normalize(analysis.barcode)} decoded by VM`);
       await handleDecoded(analysis.barcode, analysis, {
         description: analysis.description || "",
+        quantity: analysis.quantity || 1,
       });
     } catch (error) {
       console.error("Photo scan failed:", error);
