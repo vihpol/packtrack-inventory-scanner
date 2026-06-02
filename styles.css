@@ -655,10 +655,6 @@ p {
   box-shadow: 0 0 0 3px rgba(0, 191, 195, 0.16);
 }
 
-.phone-hardware-field {
-  margin-top: 10px;
-}
-
 .section-heading,
 .modal-heading,
 .modal-actions {
@@ -722,15 +718,9 @@ p {
   margin-bottom: 14px;
 }
 
-#phoneCameraButton {
-  width: 100%;
-  min-height: 54px;
-  font-size: 1.05rem;
-}
-
 .phone-mode-picker {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
   margin-bottom: 12px;
 }
@@ -760,19 +750,6 @@ p {
   background: linear-gradient(135deg, rgba(255, 183, 27, 0.32), rgba(180, 83, 9, 0.18));
 }
 
-#phoneCameraShell {
-  position: relative;
-  overflow: hidden;
-  margin-top: 14px;
-  border-radius: 8px;
-  background: var(--navy);
-}
-
-#phoneCameraReader {
-  overflow: hidden;
-  border-radius: 8px;
-}
-
 .photo-scan-input {
   position: absolute;
   width: 1px;
@@ -796,62 +773,6 @@ p {
 
 .photo-scan-button:active {
   transform: translateY(1px);
-}
-
-#scannerOverlay {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-}
-
-.scan-corner {
-  position: absolute;
-  width: 54px;
-  height: 54px;
-  border-color: var(--blue);
-  filter: drop-shadow(0 0 9px rgba(0, 191, 195, 0.9));
-}
-
-.top-left {
-  top: 18px;
-  left: 18px;
-  border-top: 4px solid;
-  border-left: 4px solid;
-}
-
-.top-right {
-  top: 18px;
-  right: 18px;
-  border-top: 4px solid;
-  border-right: 4px solid;
-}
-
-.bottom-left {
-  bottom: 18px;
-  left: 18px;
-  border-bottom: 4px solid;
-  border-left: 4px solid;
-}
-
-.bottom-right {
-  right: 18px;
-  bottom: 18px;
-  border-right: 4px solid;
-  border-bottom: 4px solid;
-}
-
-.scan-beam {
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--blue), var(--accent), var(--blue), transparent);
-  box-shadow:
-    0 0 16px rgba(0, 191, 195, 0.9),
-    0 0 34px rgba(0, 191, 195, 0.35);
-  animation: phoneScanBeam 1.8s ease-in-out infinite;
 }
 
 .phone-result {

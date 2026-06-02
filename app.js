@@ -34,19 +34,13 @@ const el = {
   navButtons: Array.from(document.querySelectorAll("[data-view]")),
   viewPanels: Array.from(document.querySelectorAll("[data-view-panel]")),
   phoneScanner: document.querySelector("#phoneScanner"),
-  phoneCameraButton: document.querySelector("#phoneCameraButton"),
   hardwareScanInput: document.querySelector("#hardwareScanInput"),
-  phoneHardwareInput: document.querySelector("#phoneHardwareInput"),
   phoneModeButtons: Array.from(document.querySelectorAll("[data-scan-mode]")),
-  phoneCameraReader: document.querySelector("#phoneCameraReader"),
-  scannerOverlay: document.querySelector("#scannerOverlay"),
   phoneScanResult: document.querySelector("#phoneScanResult"),
 };
 
 let previousInventory = new Map();
-let phoneScanner = null;
 let phoneScanMode = "incoming";
-let scanLocked = false;
 let latestActivityId = "";
 let dashboardAlertTimer = null;
 let dashboardPollTimer = null;
@@ -506,120 +500,6 @@ async function scanProduct({
   }
 }
 
-async function togglePhoneCamera() {
-  if (phoneScanner) {
-    await stopPhoneCamera();
-    return;
-  }
-
-  primeScanAudio();
-
-  if (!window.isSecureContext || !navigator.mediaDevices) {
-    setStatus("Camera needs HTTPS. Open the localtunnel HTTPS URL on your phone.", "warn");
-    return;
-  }
-
-  if (!window.Html5Qrcode) {
-    setStatus("Scanner loading. Try again.", "warn");
-    return;
-  }
-
-  try {
-    phoneScanner = new Html5Qrcode("phoneCameraReader", {
-      formatsToSupport: getSupportedPhoneFormats(),
-      useBarCodeDetectorIfSupported: true,
-    });
-    el.phoneCameraButton.textContent = "Stop camera";
-    el.scannerOverlay.hidden = false;
-    scanLocked = false;
-    setStatus("Scanner active");
-
-    await phoneScanner.start(
-      { facingMode: "environment" },
-      {
-        fps: 12,
-        aspectRatio: 1.333,
-      },
-      async (decodedText) => {
-        if (scanLocked) return;
-        scanLocked = true;
-
-        const normalized = normalizeScan(decodedText);
-        setStatus(`${normalized} detected`);
-
-        try {
-          const result = await scanProduct({
-            barcode: decodedText,
-            mode: phoneScanMode,
-            quantity: 1,
-          });
-          if (result && result.matched === false) {
-            playScanPing("warn");
-            if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
-            setStatus(`${normalized} not found`, "warn");
-          } else {
-            playScanPing("ok");
-            if (navigator.vibrate) navigator.vibrate(160);
-            setStatus(`${normalized} saved`, "ok");
-          }
-        } catch (error) {
-          playScanPing("warn");
-          if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
-          setStatus(error.message, "warn");
-        } finally {
-          await stopPhoneCamera({ silent: true });
-          scanLocked = false;
-        }
-      }
-    );
-  } catch (error) {
-    phoneScanner = null;
-    el.phoneCameraButton.textContent = "Start camera";
-    el.scannerOverlay.hidden = true;
-    setStatus("Camera access unavailable", "warn");
-  }
-}
-
-function scanModeLabel(mode) {
-  if (mode === "incoming") return "receiving";
-  if (mode === "outgoing") return "issue";
-  return "stock";
-}
-
-async function stopPhoneCamera(options = {}) {
-  if (!phoneScanner) return;
-  await phoneScanner.stop().catch(() => {});
-  phoneScanner.clear();
-  phoneScanner = null;
-  el.phoneCameraButton.textContent = "Start camera";
-  el.scannerOverlay.hidden = true;
-  if (!options.silent) setStatus("Scanner stopped");
-}
-
-function getSupportedPhoneFormats() {
-  if (!window.Html5QrcodeSupportedFormats) return undefined;
-
-  return [
-    Html5QrcodeSupportedFormats.AZTEC,
-    Html5QrcodeSupportedFormats.CODABAR,
-    Html5QrcodeSupportedFormats.CODE_128,
-    Html5QrcodeSupportedFormats.CODE_39,
-    Html5QrcodeSupportedFormats.CODE_93,
-    Html5QrcodeSupportedFormats.DATA_MATRIX,
-    Html5QrcodeSupportedFormats.EAN_8,
-    Html5QrcodeSupportedFormats.EAN_13,
-    Html5QrcodeSupportedFormats.ITF,
-    Html5QrcodeSupportedFormats.MAXICODE,
-    Html5QrcodeSupportedFormats.PDF_417,
-    Html5QrcodeSupportedFormats.QR_CODE,
-    Html5QrcodeSupportedFormats.RSS_14,
-    Html5QrcodeSupportedFormats.RSS_EXPANDED,
-    Html5QrcodeSupportedFormats.UPC_A,
-    Html5QrcodeSupportedFormats.UPC_E,
-    Html5QrcodeSupportedFormats.UPC_EAN_EXTENSION,
-  ].filter(Boolean);
-}
-
 async function addProduct(event) {
   event.preventDefault();
 
@@ -758,7 +638,7 @@ function handleInventoryClick(event) {
 }
 
 function hardwareScannerInput() {
-  return isPhoneScannerView() ? el.phoneHardwareInput : el.hardwareScanInput;
+  return isPhoneScannerView() ? null : el.hardwareScanInput;
 }
 
 function focusHardwareScanner() {
@@ -789,15 +669,15 @@ function handleHardwareScannerKeydown(event) {
   if (event.key !== "Enter") return;
   event.preventDefault();
 
-  const mode = event.currentTarget === el.phoneHardwareInput ? phoneScanMode : "smart";
-  submitHardwareScan(event.currentTarget, mode);
+  submitHardwareScan(event.currentTarget, "smart");
 }
 
 function shouldCaptureHardwareKey(event) {
   if (isFileMode() || event.ctrlKey || event.metaKey || event.altKey) return false;
+  if (isPhoneScannerView()) return false;
   if (!isPhoneScannerView() && !el.entryModal.hidden) return false;
   const target = event.target;
-  if (target === el.hardwareScanInput || target === el.phoneHardwareInput) return false;
+  if (target === el.hardwareScanInput) return false;
   if (target && target.closest && target.closest("input, textarea, select, [contenteditable='true']")) return false;
   return true;
 }
@@ -820,7 +700,7 @@ function handleGlobalHardwareScannerKeydown(event) {
     event.preventDefault();
     scanProduct({
       barcode,
-      mode: isPhoneScannerView() ? phoneScanMode : "smart",
+      mode: "smart",
       quantity: 1,
     }).catch(() => {});
     return;
@@ -853,12 +733,8 @@ el.entryModal.addEventListener("click", (event) => {
 el.closeDashboardAlertButton.addEventListener("click", closeDashboardAlert);
 el.loadDemoButton.addEventListener("click", loadDemoData);
 el.resetDemoButton.addEventListener("click", resetInventory);
-el.phoneCameraButton.addEventListener("click", togglePhoneCamera);
 if (el.hardwareScanInput) {
   el.hardwareScanInput.addEventListener("keydown", handleHardwareScannerKeydown);
-}
-if (el.phoneHardwareInput) {
-  el.phoneHardwareInput.addEventListener("keydown", handleHardwareScannerKeydown);
 }
 el.phoneModeButtons.forEach((button) => {
   button.addEventListener("click", () => {

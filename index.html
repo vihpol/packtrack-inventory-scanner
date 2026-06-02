@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Micas Inventory</title>
     <link rel="stylesheet" href="./styles.css" />
-    <script src="./vendor/dynamsoft/dbr.bundle.js" defer></script>
-    <script src="./vendor/html5-qrcode.min.js" defer></script>
     <script src="./app.js?v=auto-label-ai" defer></script>
     <script src="./scanner-fix.js?v=photo-scan" defer></script>
     <script src="./qr-fix.js?v=qr-fallback" defer></script>
@@ -75,23 +73,11 @@
             <button class="active" type="button" data-scan-mode="incoming">Receive</button>
             <button type="button" data-scan-mode="outgoing">Issue</button>
           </div>
-          <button id="phoneCameraButton" type="button">Start camera</button>
           <label class="photo-scan-button" for="phonePhotoInput">Scan label photo</label>
           <input id="phonePhotoInput" class="photo-scan-input" type="file" accept="image/*" capture="environment" />
-          <input id="phoneHardwareInput" class="hardware-scan-field phone-hardware-field" autocomplete="off" inputmode="none" placeholder="Bluetooth scanner ready" />
           <p class="scanner-help">
             For dense switch labels, use Scan label photo so the VM can enhance and decode the image.
           </p>
-          <div id="phoneCameraShell">
-            <div id="phoneCameraReader"></div>
-            <div id="scannerOverlay" hidden>
-              <span class="scan-corner top-left"></span>
-              <span class="scan-corner top-right"></span>
-              <span class="scan-corner bottom-left"></span>
-              <span class="scan-corner bottom-right"></span>
-              <span class="scan-beam"></span>
-            </div>
-          </div>
           <div id="phoneScanResult" class="phone-result">Scanner idle</div>
         </div>
       </section>
