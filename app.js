@@ -31,7 +31,6 @@ const el = {
   outgoingLog: document.querySelector("#outgoingLog"),
   inventoryPanel: document.querySelector("#inventoryPanel"),
   historyPanel: document.querySelector("#historyPanel"),
-  hardwareScanCard: document.querySelector(".hardware-scan-card"),
   dashboardShell: document.querySelector("#dashboardShell"),
   hero: document.querySelector(".hero"),
   dashboardView: document.querySelector("#dashboardView"),
@@ -100,9 +99,6 @@ function setDashboardView(view) {
 
   el.workbookTitle.textContent = dashboardViews[selected].title;
   el.workbookDescription.textContent = dashboardViews[selected].description;
-  if (el.hardwareScanCard) {
-    el.hardwareScanCard.hidden = selected === "history";
-  }
 
   if (!isPhoneScannerView() && window.location.hash !== `#${selected}`) {
     history.replaceState(null, "", `#${selected}`);
