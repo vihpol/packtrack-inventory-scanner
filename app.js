@@ -3,9 +3,6 @@ const el = {
   productBarcode: document.querySelector("#productBarcode"),
   productDescription: document.querySelector("#productDescription"),
   productQuantity: document.querySelector("#productQuantity"),
-  labelPhotoInput: document.querySelector("#labelPhotoInput"),
-  analyzeLabelButton: document.querySelector("#analyzeLabelButton"),
-  labelAnalysisStatus: document.querySelector("#labelAnalysisStatus"),
   addProductButton: document.querySelector("#addProductButton"),
   openEntryModalButton: document.querySelector("#openEntryModalButton"),
   closeEntryModalButton: document.querySelector("#closeEntryModalButton"),
@@ -55,7 +52,6 @@ let dashboardPollTimer = null;
 let scanAudioContext = null;
 let hardwareScanBuffer = "";
 let hardwareScanBufferTimer = null;
-let selectedLabelPhoto = null;
 
 const dashboardViews = {
   inventory: {
@@ -612,77 +608,6 @@ async function addProduct(event) {
   }
 }
 
-function setLabelAnalysisStatus(message, tone = "") {
-  if (!el.labelAnalysisStatus) return;
-  el.labelAnalysisStatus.textContent = message;
-  el.labelAnalysisStatus.className = tone;
-}
-
-function imageFileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      image.onload = () => {
-        const maxSide = 3200;
-        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1, Math.round(image.width * scale));
-        canvas.height = Math.max(1, Math.round(image.height * scale));
-        const context = canvas.getContext("2d");
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.95));
-      };
-      image.onerror = () => reject(new Error("Could not read that photo"));
-      image.src = reader.result;
-    };
-    reader.onerror = () => reject(new Error("Could not load that photo"));
-    reader.readAsDataURL(file);
-  });
-}
-
-function handleLabelPhotoSelected() {
-  selectedLabelPhoto = el.labelPhotoInput.files && el.labelPhotoInput.files[0];
-  el.analyzeLabelButton.disabled = !selectedLabelPhoto;
-  setLabelAnalysisStatus(selectedLabelPhoto ? selectedLabelPhoto.name : "Optional: take a photo to prefill this entry.");
-  if (selectedLabelPhoto) {
-    analyzeLabelPhoto();
-  }
-}
-
-async function analyzeLabelPhoto() {
-  if (!selectedLabelPhoto) {
-    setLabelAnalysisStatus("Choose a label photo first.", "warn");
-    return;
-  }
-
-  el.analyzeLabelButton.disabled = true;
-  setLabelAnalysisStatus("Analyzing label...");
-
-  try {
-    const image = await imageFileToDataUrl(selectedLabelPhoto);
-    const analysis = await api("/api/analyze-label", {
-      method: "POST",
-      body: JSON.stringify({ image }),
-      timeout: 45000,
-    });
-
-    if (analysis.barcode) el.productBarcode.value = analysis.barcode;
-    if (analysis.description) el.productDescription.value = analysis.description;
-    if (analysis.quantity) el.productQuantity.value = analysis.quantity;
-
-    const confidence = analysis.confidence ? ` ${analysis.confidence}.` : "";
-    setLabelAnalysisStatus(`Prefilled from photo.${confidence}`, "ok");
-    setStatus("Label details filled", "ok");
-  } catch (error) {
-    setLabelAnalysisStatus(error.message, "warn");
-    setStatus(error.message, "warn");
-  } finally {
-    el.analyzeLabelButton.disabled = !selectedLabelPhoto;
-  }
-}
-
 async function deleteProduct(barcode) {
   const normalized = normalizeScan(barcode);
   if (!normalized) return;
@@ -825,8 +750,6 @@ function escapeHtml(value) {
 }
 
 el.productForm.addEventListener("submit", addProduct);
-el.labelPhotoInput.addEventListener("change", handleLabelPhotoSelected);
-el.analyzeLabelButton.addEventListener("click", analyzeLabelPhoto);
 el.inventoryBody.addEventListener("click", handleInventoryClick);
 el.openEntryModalButton.addEventListener("click", openEntryModal);
 el.closeEntryModalButton.addEventListener("click", closeEntryModal);
