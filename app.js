@@ -340,6 +340,10 @@ function processDashboardActivity(activity, options = {}) {
   latestActivityId = latest.id;
   if (options.silent) return;
 
+  if (["Incoming inventory", "Outgoing inventory", "Units removed", "Product added"].includes(latest.type)) {
+    setDashboardView("inventory");
+  }
+
   if (latest.type === "Unknown outgoing scan") {
     showDashboardAlert(`${latest.details}. Item was not issued.`);
   } else if (latest.type === "Rejected outgoing scan") {

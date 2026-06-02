@@ -574,6 +574,28 @@ function barcodeCandidatesFromText(text) {
     .sort((a, b) => b.length - a.length);
 }
 
+function primaryBarcodeFromLabel(ocrText, decodedValues) {
+  const details = labelDetailsFromText(ocrText, "");
+  const candidates = uniqueValues(decodedValues).concat(barcodeCandidatesFromText(ocrText)).map(normalizeBarcode);
+
+  if (details.barcodePrefix && details.packageId) {
+    const ocrBarcode = normalizeBarcode(`${details.barcodePrefix}${details.packageId}`);
+    const barcodeFromSameLabel = candidates
+      .filter((value) => value.startsWith(details.barcodePrefix))
+      .filter((value) => value.startsWith(ocrBarcode) || ocrBarcode.startsWith(value))
+      .sort((a, b) => b.length - a.length)[0];
+    return barcodeFromSameLabel || ocrBarcode;
+  }
+
+  const preferred =
+    candidates.find((value) => /^3[SR][A-Z0-9]{12,}$/i.test(value)) ||
+    candidates.find((value) => /^(S|N|R)\d{4}/i.test(value)) ||
+    candidates.find((value) => /[A-Z]/.test(value) && value.length >= 18) ||
+    candidates.find((value) => /^\d{18,}$/.test(value));
+
+  return preferred || candidates[0] || "";
+}
+
 function inferLabelDescription(text, barcode) {
   const details = labelDetailsFromText(text, barcode);
   if (details.labelType) return details.labelType;
@@ -624,14 +646,24 @@ function labelDetailsFromText(text, barcode) {
   if (packageMatch) {
     details.barcodePrefix = packageMatch[1].toUpperCase();
     details.packageId = packageMatch[2].toUpperCase();
-  } else if (/^[A-Z0-9]{2}[A-Z0-9._-]{8,}$/i.test(compactBarcode)) {
+  }
+
+  if (
+    details.barcodePrefix &&
+    details.packageId &&
+    compactBarcode.startsWith(details.barcodePrefix) &&
+    compactBarcode.slice(details.barcodePrefix.length).startsWith(details.packageId)
+  ) {
+    details.packageId = compactBarcode.slice(details.barcodePrefix.length);
+  } else if (!details.packageId && /^[A-Z0-9]{2}[A-Z0-9._-]{8,}$/i.test(compactBarcode)) {
     details.barcodePrefix = compactBarcode.slice(0, 2);
     details.packageId = compactBarcode.slice(2);
   }
 
+  const barcodeDpnMatch = compactBarcode.match(/(0[A-Z0-9]{5})\d{2}$/i);
   const dpnMatch =
-    normalizedText.match(/\bD\s*P\s*\/?\s*N\s*[:#-]?\s*([0O][A-Z0-9]{5})\b/i) ||
-    compactBarcode.match(/(0[A-Z0-9]{5})\d{2}$/i);
+    barcodeDpnMatch ||
+    normalizedText.match(/\bD\s*P\s*\/?\s*N\s*[:#-]?\s*([0O][A-Z0-9]{5})\b/i);
   if (dpnMatch) {
     details.dpn = dpnMatch[1].toUpperCase().replace(/^O/, "0");
   }
@@ -759,8 +791,7 @@ async function localLabelAnalysis(image) {
     const ocr = await execFile("tesseract", [ocrImage, "stdout", "--psm", "6"]);
     const ocrText = ocr.stdout;
 
-    const candidates = uniqueValues(decoded).concat(barcodeCandidatesFromText(ocrText));
-    const barcode = normalizeBarcode(candidates[0] || "");
+    const barcode = primaryBarcodeFromLabel(ocrText, decoded);
     const details = labelDetailsFromText(ocrText, barcode);
     return {
       barcode,
