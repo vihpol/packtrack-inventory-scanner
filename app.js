@@ -377,7 +377,10 @@ function renderInventory(items) {
       const changed = previous !== undefined && previous !== item.quantity;
       return `
         <tr>
-          <td>${renderField(item.labelType || item.description || item.name, item, "labelType")}</td>
+          <td>
+            ${renderField(item.description || item.labelType || item.name, item, "description")}
+            ${item.labelType ? `<span class="cell-note">${escapeHtml(item.labelType)}</span>` : ""}
+          </td>
           <td>
             <code>${escapeHtml(item.packageId || item.barcode)}</code>${renderEstimatedBadge(item, item.packageId ? "packageId" : "barcode")}
             ${item.barcodePrefix ? `<span class="cell-note">Prefix ${escapeHtml(item.barcodePrefix)}</span>` : ""}
@@ -534,6 +537,9 @@ async function scanProduct({
     });
 
     renderState(result);
+    if (!isPhoneScannerView()) {
+      setDashboardView("inventory");
+    }
     if (result.mode === "incoming") {
       setStatus(`${normalized} received`, "ok");
       flash(el.historyPanel, "scan-success");

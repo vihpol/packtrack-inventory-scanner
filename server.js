@@ -244,7 +244,8 @@ function mergeLabelDetails(item, product) {
 
   fields.forEach((field) => {
     const value = String(product[field] || details[field] || "").trim();
-    if (value) item[field] = value;
+    if (!value) return;
+    item[field] = field === "boxQty" ? Number(value) : value;
   });
   item.estimatedFields = normalizeEstimatedFields(product.estimatedFields || item.estimatedFields);
 }
@@ -263,6 +264,34 @@ function cleanDescription(product, barcode) {
   ]);
 
   return genericDescriptions.has(normalized) ? "" : description;
+}
+
+function productDescriptionFromDetails(details, barcode) {
+  const modelRef = String(details.modelRef || "").toUpperCase();
+  const dpn = String(details.dpn || "").toUpperCase();
+  const labelType = String(details.labelType || "").trim();
+  const compactBarcode = normalizeBarcode(barcode);
+
+  if (/Z9432F/i.test(modelRef) || dpn === "0GM6WJ" || compactBarcode.includes("GM6WJ")) {
+    return "Dell PowerSwitch Z9432F-ON 32-port 400GbE switch";
+  }
+  if (/S5810/i.test(modelRef) || /S5810/i.test(compactBarcode)) {
+    return "S5810-48TS 48-port switch";
+  }
+  if (/S6810/i.test(modelRef) || /S6810/i.test(compactBarcode)) {
+    return "S6810-32X 100G spine switch";
+  }
+  if (/QSFP|SFP|XFP|AOC|DAC|OPTIC|TRANSCEIVER/i.test(`${modelRef} ${labelType} ${compactBarcode}`)) {
+    return modelRef ? `${modelRef} optical transceiver` : "Optical transceiver";
+  }
+  if (/ROUTER/i.test(labelType) || /^3R[A-Z0-9]/i.test(compactBarcode)) {
+    return modelRef ? `${modelRef} router` : "Network router";
+  }
+  if (/SWITCH/i.test(labelType) || /^3S[A-Z0-9]/i.test(compactBarcode)) {
+    return modelRef ? `${modelRef} switch` : "Network switch";
+  }
+
+  return "";
 }
 
 function findInventory(data, barcode) {
@@ -313,8 +342,13 @@ function incomingScan(data, product) {
   const barcode = normalizeBarcode(product.barcode);
   const quantity = Math.max(1, Number(product.quantity || 1));
   const providedDescription = cleanDescription(product, barcode);
+  const labelDetails = labelDetailsFromText(
+    [product.rawText, product.description, product.modelRef, product.origin].filter(Boolean).join("\n"),
+    barcode
+  );
+  const enrichedDescription = providedDescription || productDescriptionFromDetails(Object.assign({}, labelDetails, product), barcode);
   const providedCost = product.cost !== undefined && product.cost !== null && product.cost !== "";
-  const description = providedDescription || "Unidentified item";
+  const description = enrichedDescription || "Unidentified item";
   const cost = providedCost && Number.isFinite(Number(product.cost)) ? Number(product.cost) : 0;
 
   if (!barcode) {
@@ -323,8 +357,8 @@ function incomingScan(data, product) {
 
   let item = findInventory(data, barcode);
   if (item) {
-    if (providedDescription) {
-      item.description = providedDescription;
+    if (enrichedDescription) {
+      item.description = enrichedDescription;
     }
     if (providedCost) {
       item.cost = cost;
@@ -591,10 +625,9 @@ function cleanAnalysisResult(result) {
     barcode
   );
   const fallbackEstimatedFields = applyKnownLabelFallbacks(details);
-  const description = inferLabelDescription(
-    [result.description, result.item, result.model, result.notes].filter(Boolean).join("\n"),
-    barcode
-  );
+  const description =
+    productDescriptionFromDetails(Object.assign({}, details, result), barcode) ||
+    inferLabelDescription([result.description, result.item, result.model, result.notes].filter(Boolean).join("\n"), barcode);
   const quantity = Number(result.quantity || result.units || 1);
   return {
     barcode,
@@ -932,9 +965,10 @@ async function localLabelAnalysis(image) {
     if (!decoded.length && barcode) estimatedFields.push("barcode");
     estimatedFields.push(...fallbackEstimatedFields);
     const quantity = details.boxQty || 1;
+    const description = productDescriptionFromDetails(details, barcode) || details.labelType || inferLabelDescription(ocrText, barcode);
     return {
       barcode,
-      description: details.labelType || inferLabelDescription(ocrText, barcode),
+      description,
       quantity,
       labelType: details.labelType,
       packageId: details.packageId,
