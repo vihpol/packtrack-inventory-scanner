@@ -713,9 +713,12 @@ async function localLabelAnalysis(image) {
     const variantSpecs = [
       ["original.png", []],
       ["gray.png", ["-colorspace", "Gray", "-normalize"]],
+      ["low-light.png", ["-resize", "3600x3600>", "-colorspace", "Gray", "-auto-level", "-brightness-contrast", "35x18", "-gamma", "0.78", "-sharpen", "0x1.1"]],
+      ["low-light-strong.png", ["-resize", "3600x3600>", "-colorspace", "Gray", "-auto-level", "-modulate", "145,115", "-contrast-stretch", "1%x1%", "-sharpen", "0x1.4"]],
       ["large.png", ["-resize", "3600x3600>", "-colorspace", "Gray", "-normalize", "-sharpen", "0x1.2"]],
       ["deskew.png", ["-resize", "3600x3600>", "-colorspace", "Gray", "-normalize", "-deskew", "40%", "-sharpen", "0x1"]],
       ["threshold-55.png", ["-resize", "3600x3600>", "-colorspace", "Gray", "-normalize", "-threshold", "55%"]],
+      ["bright-threshold.png", ["-resize", "3600x3600>", "-colorspace", "Gray", "-auto-level", "-brightness-contrast", "30x15", "-threshold", "58%"]],
       ["adaptive.png", ["-resize", "3600x3600>", "-colorspace", "Gray", "-normalize", "-lat", "28x28+8%"]],
       ["contrast.png", ["-resize", "3600x3600>", "-colorspace", "Gray", "-contrast-stretch", "2%x2%", "-sharpen", "0x1.4"]],
     ];
@@ -737,7 +740,22 @@ async function localLabelAnalysis(image) {
     }
 
     const ocrImage = path.join(tempDir, "ocr.png");
-    await execFile("convert", [originalPath, "-auto-orient", "-colorspace", "Gray", "-normalize", "-resize", "3200x3200>", ocrImage]);
+    await execFile("convert", [
+      originalPath,
+      "-auto-orient",
+      "-resize",
+      "3200x3200>",
+      "-colorspace",
+      "Gray",
+      "-auto-level",
+      "-brightness-contrast",
+      "28x14",
+      "-gamma",
+      "0.82",
+      "-sharpen",
+      "0x1",
+      ocrImage,
+    ]);
     const ocr = await execFile("tesseract", [ocrImage, "stdout", "--psm", "6"]);
     const ocrText = ocr.stdout;
 
