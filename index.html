@@ -138,6 +138,7 @@
                   <th>DP/N</th>
                   <th>Reference</th>
                   <th>Origin</th>
+                  <th>Box qty</th>
                   <th>Units</th>
                   <th>Action</th>
                 </tr>
@@ -158,6 +159,7 @@
                       <th>Scan time</th>
                       <th>Barcode / serial</th>
                       <th>Product description</th>
+                      <th>Details</th>
                       <th>Units</th>
                     </tr>
                   </thead>
@@ -175,6 +177,7 @@
                       <th>Scan time</th>
                       <th>Barcode / serial</th>
                       <th>Product description</th>
+                      <th>Details</th>
                       <th>Units</th>
                     </tr>
                   </thead>
@@ -224,6 +227,10 @@
             <label>
               Origin
               <input id="productOrigin" autocomplete="off" placeholder="Made in Taiwan" />
+            </label>
+            <label>
+              Box qty
+              <input id="productBoxQty" type="number" min="0" step="1" value="0" />
             </label>
             <label class="units-field">
               Units

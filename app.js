@@ -7,6 +7,7 @@ const el = {
   productDpn: document.querySelector("#productDpn"),
   productModelRef: document.querySelector("#productModelRef"),
   productOrigin: document.querySelector("#productOrigin"),
+  productBoxQty: document.querySelector("#productBoxQty"),
   productQuantity: document.querySelector("#productQuantity"),
   addProductButton: document.querySelector("#addProductButton"),
   openEntryModalButton: document.querySelector("#openEntryModalButton"),
@@ -366,7 +367,7 @@ function renderInventory(items) {
   if (items.length === 0) {
     el.inventoryBody.innerHTML = `
       <tr>
-        <td colspan="7">No stock records</td>
+        <td colspan="8">No stock records</td>
       </tr>
     `;
     previousInventory = new Map();
@@ -388,6 +389,7 @@ function renderInventory(items) {
           <td>${renderField(item.dpn, item, "dpn")}</td>
           <td>${renderField(item.modelRef, item, "modelRef")}</td>
           <td>${renderField(item.origin, item, "origin")}</td>
+          <td>${renderField(item.boxQty || "", item, "boxQty")}</td>
           <td class="${changed ? "changed" : ""}">${item.quantity}</td>
           <td>
             <div class="row-actions">
@@ -430,7 +432,7 @@ function renderScanList(container, entries, emptyText) {
   if (visible.length === 0) {
     container.innerHTML = `
       <tr>
-        <td colspan="4">${emptyText}</td>
+        <td colspan="5">${emptyText}</td>
       </tr>
     `;
     return;
@@ -443,11 +445,30 @@ function renderScanList(container, entries, emptyText) {
           <td>${escapeHtml(scannedAt(entry.time, "Just now"))}</td>
           <td><code>${escapeHtml(entry.barcode || "")}</code></td>
           <td>${escapeHtml(entry.description || "Unassigned item")}</td>
+          <td>${renderScanDetails(entry)}</td>
           <td>${entry.quantity}</td>
         </tr>
       `;
     })
     .join("");
+}
+
+function renderScanDetails(entry) {
+  const details = [
+    ["Package", entry.packageId],
+    ["DP/N", entry.dpn],
+    ["Ref", entry.modelRef],
+    ["Origin", entry.origin],
+    ["Box qty", entry.boxQty || ""],
+  ].filter(([, value]) => String(value || "").trim());
+
+  if (!details.length) return "-";
+
+  return `
+    <div class="scan-detail-list">
+      ${details.map(([label, value]) => `<span><b>${escapeHtml(label)}</b> ${escapeHtml(value)}</span>`).join("")}
+    </div>
+  `;
 }
 
 async function loadState(options = {}) {
@@ -487,6 +508,7 @@ async function scanProduct({
   dpn = "",
   modelRef = "",
   origin = "",
+  boxQty = 0,
   estimatedFields = [],
 }) {
   const normalized = normalizeScan(barcode);
@@ -510,6 +532,7 @@ async function scanProduct({
         dpn,
         modelRef,
         origin,
+        boxQty,
         estimatedFields,
       }),
     });
@@ -553,6 +576,7 @@ async function addProduct(event) {
     dpn: el.productDpn.value.trim(),
     modelRef: el.productModelRef.value.trim(),
     origin: el.productOrigin.value.trim(),
+    boxQty: Number(el.productBoxQty.value || 0),
     estimatedFields: [],
   };
 
@@ -701,6 +725,7 @@ function openEditModal(barcode) {
   el.productDpn.value = item.dpn || "";
   el.productModelRef.value = item.modelRef || "";
   el.productOrigin.value = item.origin || "";
+  el.productBoxQty.value = Number(item.boxQty || 0);
   el.productQuantity.value = Number(item.quantity || 0);
   el.entryModal.hidden = false;
   el.productDescription.focus();

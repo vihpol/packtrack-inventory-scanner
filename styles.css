@@ -992,6 +992,31 @@ td code {
   vertical-align: middle;
 }
 
+.scan-detail-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.scan-detail-list span {
+  display: inline-flex;
+  gap: 4px;
+  border: 1px solid rgba(0, 191, 195, 0.2);
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: rgba(0, 191, 195, 0.08);
+  color: #c9eeee;
+  font-size: 0.72rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.scan-detail-list b {
+  color: #82f3f4;
+  font-weight: 950;
+}
+
 .sheet-table {
   min-width: 100%;
 }

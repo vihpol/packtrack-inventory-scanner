@@ -79,6 +79,7 @@
         dpn: details.dpn || "",
         modelRef: details.modelRef || "",
         origin: details.origin || "",
+        boxQty: details.boxQty || 0,
         estimatedFields: Array.isArray(details.estimatedFields) ? details.estimatedFields : [],
       });
     }
@@ -100,6 +101,7 @@
         dpn: details.dpn || "",
         modelRef: details.modelRef || "",
         origin: details.origin || "",
+        boxQty: details.boxQty || 0,
         estimatedFields: Array.isArray(details.estimatedFields) ? details.estimatedFields : [],
       }),
     }).catch((error) => {
@@ -134,9 +136,10 @@
         if (navigator.vibrate) navigator.vibrate(160);
         const quantity = Math.max(1, Number(details.quantity || 1));
         const delta = selectedMode() === "outgoing" ? "-1" : `+${quantity}`;
+        const detailNote = scanDetailSummary(details);
         const estimateNote = Array.isArray(details.estimatedFields) && details.estimatedFields.length ? " • estimated fields shown on dashboard" : "";
         setProgress("saved", 100);
-        setScannerStatus(`Saved ${normalized} (${delta})${estimateNote}`, "ok");
+        setScannerStatus(`Saved ${normalized} (${delta})${detailNote}${estimateNote}`, "ok");
       }
     } catch (error) {
       if (typeof window.playScanPing === "function") window.playScanPing("warn");
@@ -180,6 +183,7 @@
         dpn: analysis.dpn || "",
         modelRef: analysis.modelRef || "",
         origin: analysis.origin || "",
+        boxQty: analysis.boxQty || 0,
         estimatedFields: Array.isArray(analysis.estimatedFields) ? analysis.estimatedFields : [],
       });
     } catch (error) {
@@ -196,4 +200,15 @@
   photoInput.addEventListener("change", () => {
     scanPhoto(photoInput.files && photoInput.files[0]);
   });
+
+  function scanDetailSummary(details = {}) {
+    const parts = [
+      details.packageId ? `PKG ${details.packageId}` : "",
+      details.dpn ? `DP/N ${details.dpn}` : "",
+      details.modelRef ? `Ref ${details.modelRef}` : "",
+      details.origin || "",
+      details.boxQty ? `Box qty ${details.boxQty}` : "",
+    ].filter(Boolean);
+    return parts.length ? ` • ${parts.join(" • ")}` : "";
+  }
 })();
