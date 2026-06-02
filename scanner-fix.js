@@ -1,6 +1,7 @@
 (() => {
   const photoInput = document.querySelector("#phonePhotoInput");
   const resultElement = document.querySelector("#phoneScanResult");
+  const progressElement = document.querySelector("#phoneScanProgress");
 
   if (!photoInput || !window.location.pathname.endsWith("/scanner")) return;
 
@@ -15,6 +16,12 @@
       resultElement.textContent = message;
       resultElement.className = `phone-result ${tone}`;
     }
+  }
+
+  function setProgress(state = "idle") {
+    if (!progressElement) return;
+    progressElement.hidden = state === "idle";
+    progressElement.className = `phone-progress ${state}`;
   }
 
   function normalize(value) {
@@ -106,25 +113,29 @@
     scanLocked = true;
 
     const normalized = normalize(decodedText);
-    setScannerStatus(`${normalized} decoded by VM`);
+    setProgress("saving");
+    setScannerStatus(`Saving ${normalized}...`);
 
     try {
       const result = await postScan(decodedText, details);
       if (result && result.matched === false) {
         if (typeof window.playScanPing === "function") window.playScanPing("warn");
         if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
-        setScannerStatus(`${normalized} not found`, "warn");
+        setProgress("failed");
+        setScannerStatus(`Failed to save ${normalized}`, "warn");
       } else {
         if (typeof window.playScanPing === "function") window.playScanPing("ok");
         if (navigator.vibrate) navigator.vibrate(160);
         const quantity = Math.max(1, Number(details.quantity || 1));
         const delta = selectedMode() === "outgoing" ? "-1" : `+${quantity}`;
-        setScannerStatus(`${normalized} saved (${delta})`, "ok");
+        setProgress("saved");
+        setScannerStatus(`Saved ${normalized} (${delta})`, "ok");
       }
     } catch (error) {
       if (typeof window.playScanPing === "function") window.playScanPing("warn");
       if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
-      setScannerStatus(error.message || "Scan failed", "warn");
+      setProgress("failed");
+      setScannerStatus(error.message || "Failed to save scan", "warn");
     } finally {
       scanLocked = false;
     }
@@ -132,7 +143,8 @@
 
   async function scanPhoto(file) {
     if (!file || scanLocked) return;
-    setScannerStatus("Sending photo to VM decoder...");
+    setProgress("loading");
+    setScannerStatus("Reading label photo...");
 
     try {
       const image = await imageFileToDataUrl(file);
@@ -148,6 +160,7 @@
       if (!analysis.barcode) {
         throw new Error("No barcode found in photo");
       }
+      setProgress("saving");
       await handleDecoded(analysis.barcode, {
         description: analysis.description || "",
         quantity: analysis.quantity || 1,
@@ -162,7 +175,8 @@
       console.error("Photo scan failed:", error);
       if (typeof window.playScanPing === "function") window.playScanPing("warn");
       if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
-      setScannerStatus(error.message || "Photo did not read. Fill the photo with the full barcode and keep it sharp.", "warn");
+      setProgress("failed");
+      setScannerStatus(error.message || "Failed to save scan", "warn");
     } finally {
       photoInput.value = "";
     }

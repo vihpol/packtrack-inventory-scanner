@@ -775,6 +775,41 @@ p {
   transform: translateY(1px);
 }
 
+.phone-progress {
+  overflow: hidden;
+  height: 8px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.phone-progress span {
+  display: block;
+  width: 38%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--blue), #22c55e);
+}
+
+.phone-progress.loading span,
+.phone-progress.saving span {
+  animation: phoneProgress 1.1s ease-in-out infinite;
+}
+
+.phone-progress.saving span {
+  background: linear-gradient(90deg, var(--blue), var(--accent));
+}
+
+.phone-progress.saved span {
+  width: 100%;
+  background: #22c55e;
+}
+
+.phone-progress.failed span {
+  width: 100%;
+  background: var(--warn);
+}
+
 .phone-result {
   min-height: 48px;
   margin-top: 14px;
@@ -1317,16 +1352,17 @@ tbody tr:hover {
   }
 }
 
-@keyframes phoneScanBeam {
-  0%,
-  100% {
-    transform: translateY(-118px);
-    opacity: 0.35;
+@keyframes phoneProgress {
+  0% {
+    transform: translateX(-110%);
   }
 
-  50% {
-    transform: translateY(118px);
-    opacity: 1;
+  70% {
+    transform: translateX(175%);
+  }
+
+  100% {
+    transform: translateX(175%);
   }
 }
 
