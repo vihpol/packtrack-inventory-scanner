@@ -1096,18 +1096,28 @@ td code {
 }
 
 .launch-scanner-link {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid rgba(0, 191, 195, 0.32);
+  border-radius: 8px;
+  background: rgba(0, 191, 195, 0.12);
   color: #82f3f4;
   font-size: 0.85rem;
   font-weight: 850;
+  line-height: 1.1;
   overflow-wrap: anywhere;
+  padding: 10px 14px;
   text-align: center;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .launch-scanner-link:hover {
+  background: rgba(0, 191, 195, 0.2);
   color: #fff;
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .modal-heading {

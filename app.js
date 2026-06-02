@@ -30,6 +30,7 @@ const el = {
   dashboardView: document.querySelector("#dashboardView"),
   workbookTitle: document.querySelector("#workbookTitle"),
   workbookDescription: document.querySelector("#workbookDescription"),
+  scannerLaunchLink: document.querySelector("#scannerLaunchLink"),
   navButtons: Array.from(document.querySelectorAll("[data-view]")),
   viewPanels: Array.from(document.querySelectorAll("[data-view-panel]")),
   phoneScanner: document.querySelector("#phoneScanner"),
@@ -419,6 +420,20 @@ async function loadState(options = {}) {
     return data;
   } catch (error) {
     throw error;
+  }
+}
+
+async function loadScannerLink() {
+  if (!el.scannerLaunchLink || isPhoneScannerView() || isFileMode()) return;
+
+  try {
+    const network = await api("/api/network");
+    if (network.scannerUrl) {
+      el.scannerLaunchLink.href = network.scannerUrl;
+      el.scannerLaunchLink.title = network.scannerUrl;
+    }
+  } catch (error) {
+    el.scannerLaunchLink.href = "/scanner";
   }
 }
 
@@ -848,6 +863,7 @@ if (isPhoneScannerView()) {
   el.dashboardView.hidden = false;
   el.phoneScanner.hidden = true;
   setDashboardView(window.location.hash.replace("#", ""));
+  loadScannerLink();
 }
 
 loadState({ silent: true })
