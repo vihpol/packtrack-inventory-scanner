@@ -77,6 +77,7 @@
           <input id="phonePhotoInput" class="photo-scan-input" type="file" accept="image/*" capture="environment" />
           <div id="phoneScanProgress" class="phone-progress" hidden>
             <span></span>
+            <strong id="phoneScanPercent">0%</strong>
           </div>
           <p class="scanner-help">
             For dense switch labels, use Scan label photo so the VM can enhance and decode the image.
@@ -203,6 +204,26 @@
             <label class="hardware-field">
               Item
               <input id="productDescription" autocomplete="off" placeholder="Model, type, or configuration" required />
+            </label>
+            <label>
+              Label type
+              <input id="productLabelType" autocomplete="off" placeholder="Switch package label" />
+            </label>
+            <label>
+              Package ID
+              <input id="productPackageId" autocomplete="off" placeholder="Package or carton ID" />
+            </label>
+            <label>
+              DP/N
+              <input id="productDpn" autocomplete="off" placeholder="0GM6WJ" />
+            </label>
+            <label>
+              Reference
+              <input id="productModelRef" autocomplete="off" placeholder="Z9432F-AC" />
+            </label>
+            <label>
+              Origin
+              <input id="productOrigin" autocomplete="off" placeholder="Made in Taiwan" />
             </label>
             <label class="units-field">
               Units

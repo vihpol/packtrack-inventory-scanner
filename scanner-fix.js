@@ -2,6 +2,7 @@
   const photoInput = document.querySelector("#phonePhotoInput");
   const resultElement = document.querySelector("#phoneScanResult");
   const progressElement = document.querySelector("#phoneScanProgress");
+  const percentElement = document.querySelector("#phoneScanPercent");
 
   if (!photoInput || !window.location.pathname.endsWith("/scanner")) return;
 
@@ -18,10 +19,13 @@
     }
   }
 
-  function setProgress(state = "idle") {
+  function setProgress(state = "idle", percent = 0) {
     if (!progressElement) return;
+    const safePercent = Math.max(0, Math.min(100, Math.round(Number(percent || 0))));
     progressElement.hidden = state === "idle";
     progressElement.className = `phone-progress ${state}`;
+    progressElement.style.setProperty("--progress", `${safePercent}%`);
+    if (percentElement) percentElement.textContent = `${safePercent}%`;
   }
 
   function normalize(value) {
@@ -115,7 +119,7 @@
     scanLocked = true;
 
     const normalized = normalize(decodedText);
-    setProgress("saving");
+    setProgress("saving", 82);
     setScannerStatus(`Saving ${normalized}...`);
 
     try {
@@ -123,7 +127,7 @@
       if (result && result.matched === false) {
         if (typeof window.playScanPing === "function") window.playScanPing("warn");
         if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
-        setProgress("failed");
+        setProgress("failed", 100);
         setScannerStatus(`Failed to save ${normalized}`, "warn");
       } else {
         if (typeof window.playScanPing === "function") window.playScanPing("ok");
@@ -131,13 +135,13 @@
         const quantity = Math.max(1, Number(details.quantity || 1));
         const delta = selectedMode() === "outgoing" ? "-1" : `+${quantity}`;
         const estimateNote = Array.isArray(details.estimatedFields) && details.estimatedFields.length ? " • estimated fields shown on dashboard" : "";
-        setProgress("saved");
+        setProgress("saved", 100);
         setScannerStatus(`Saved ${normalized} (${delta})${estimateNote}`, "ok");
       }
     } catch (error) {
       if (typeof window.playScanPing === "function") window.playScanPing("warn");
       if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
-      setProgress("failed");
+      setProgress("failed", 100);
       setScannerStatus(error.message || "Failed to save scan", "warn");
     } finally {
       scanLocked = false;
@@ -146,16 +150,19 @@
 
   async function scanPhoto(file) {
     if (!file || scanLocked) return;
-    setProgress("loading");
+    setProgress("loading", 8);
     setScannerStatus("Reading label photo...");
 
     try {
       const image = await imageFileToDataUrl(file);
+      setProgress("loading", 32);
+      setScannerStatus("Preparing label image...");
       const response = await fetch("/api/analyze-label", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image }),
       });
+      setProgress("loading", 68);
       const analysis = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(analysis.error || "Photo analyzer failed");
@@ -163,7 +170,7 @@
       if (!analysis.barcode) {
         throw new Error("No barcode found in photo");
       }
-      setProgress("saving");
+      setProgress("saving", 78);
       await handleDecoded(analysis.barcode, {
         description: analysis.description || "",
         quantity: analysis.quantity || 1,
@@ -179,7 +186,7 @@
       console.error("Photo scan failed:", error);
       if (typeof window.playScanPing === "function") window.playScanPing("warn");
       if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
-      setProgress("failed");
+      setProgress("failed", 100);
       setScannerStatus(error.message || "Failed to save scan", "warn");
     } finally {
       photoInput.value = "";

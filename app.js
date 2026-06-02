@@ -2,6 +2,11 @@ const el = {
   productForm: document.querySelector("#productForm"),
   productBarcode: document.querySelector("#productBarcode"),
   productDescription: document.querySelector("#productDescription"),
+  productLabelType: document.querySelector("#productLabelType"),
+  productPackageId: document.querySelector("#productPackageId"),
+  productDpn: document.querySelector("#productDpn"),
+  productModelRef: document.querySelector("#productModelRef"),
+  productOrigin: document.querySelector("#productOrigin"),
   productQuantity: document.querySelector("#productQuantity"),
   addProductButton: document.querySelector("#addProductButton"),
   openEntryModalButton: document.querySelector("#openEntryModalButton"),
@@ -40,6 +45,8 @@ const el = {
 };
 
 let previousInventory = new Map();
+let inventoryByBarcode = new Map();
+let editingBarcode = "";
 let phoneScanMode = "incoming";
 let latestActivityId = "";
 let dashboardAlertTimer = null;
@@ -359,6 +366,7 @@ function renderInventory(items) {
       </tr>
     `;
     previousInventory = new Map();
+    inventoryByBarcode = new Map();
     return;
   }
 
@@ -379,6 +387,7 @@ function renderInventory(items) {
           <td class="${changed ? "changed" : ""}">${item.quantity}</td>
           <td>
             <div class="row-actions">
+              <button class="unit-button" type="button" data-edit-barcode="${escapeHtml(item.barcode)}">Edit</button>
               <button class="unit-button" type="button" data-remove-units-barcode="${escapeHtml(item.barcode)}" data-current-units="${item.quantity}">Remove units</button>
               <button class="delete-button" type="button" data-delete-barcode="${escapeHtml(item.barcode)}">Delete</button>
             </div>
@@ -389,6 +398,7 @@ function renderInventory(items) {
     .join("");
 
   previousInventory = new Map(items.map((item) => [item.barcode, item.quantity]));
+  inventoryByBarcode = new Map(items.map((item) => [item.barcode, item]));
 }
 
 function displayField(value) {
@@ -529,6 +539,18 @@ async function addProduct(event) {
   const description = el.productDescription.value.trim();
   const cost = 0;
   const quantity = Number(el.productQuantity.value);
+  const payload = {
+    barcode,
+    description,
+    cost,
+    quantity,
+    labelType: el.productLabelType.value.trim(),
+    packageId: el.productPackageId.value.trim(),
+    dpn: el.productDpn.value.trim(),
+    modelRef: el.productModelRef.value.trim(),
+    origin: el.productOrigin.value.trim(),
+    estimatedFields: [],
+  };
 
   if (!barcode || !description || !Number.isFinite(quantity) || quantity < 0) {
     setStatus("SKU, item, and units are required", "warn");
@@ -540,15 +562,16 @@ async function addProduct(event) {
   setStatus(`Saving ${description}`);
 
   try {
-    const data = await api("/api/products", {
-      method: "POST",
-      body: JSON.stringify({ barcode, description, cost, quantity }),
+    const wasEditing = Boolean(editingBarcode);
+    const path = editingBarcode ? `/api/products/${encodeURIComponent(editingBarcode)}` : "/api/products";
+    const data = await api(path, {
+      method: editingBarcode ? "PUT" : "POST",
+      body: JSON.stringify(payload),
     });
     renderState(data);
-    el.productForm.reset();
-    el.productQuantity.value = "1";
+    resetEntryModal();
     closeEntryModal();
-    setStatus(`${description} saved`, "ok");
+    setStatus(`${description} ${wasEditing ? "updated" : "saved"}`, "ok");
     flash(el.inventoryPanel, "scan-success");
   } catch (error) {
     setStatus(error.message, "warn");
@@ -638,6 +661,11 @@ async function resetInventory() {
 }
 
 function openEntryModal() {
+  editingBarcode = "";
+  el.productForm.reset();
+  el.productQuantity.value = "1";
+  document.querySelector("#entryModalTitle").textContent = "New stock item";
+  el.addProductButton.textContent = "Save item";
   el.entryModal.hidden = false;
   el.productBarcode.focus();
 }
@@ -647,7 +675,40 @@ function closeEntryModal() {
   focusHardwareScanner();
 }
 
+function resetEntryModal() {
+  editingBarcode = "";
+  el.productForm.reset();
+  el.productQuantity.value = "1";
+  document.querySelector("#entryModalTitle").textContent = "New stock item";
+  el.addProductButton.textContent = "Save item";
+}
+
+function openEditModal(barcode) {
+  const item = inventoryByBarcode.get(barcode);
+  if (!item) return;
+
+  editingBarcode = item.barcode;
+  document.querySelector("#entryModalTitle").textContent = "Edit stock item";
+  el.addProductButton.textContent = "Save changes";
+  el.productBarcode.value = item.barcode || "";
+  el.productDescription.value = item.description || item.labelType || "";
+  el.productLabelType.value = item.labelType || "";
+  el.productPackageId.value = item.packageId || "";
+  el.productDpn.value = item.dpn || "";
+  el.productModelRef.value = item.modelRef || "";
+  el.productOrigin.value = item.origin || "";
+  el.productQuantity.value = Number(item.quantity || 0);
+  el.entryModal.hidden = false;
+  el.productDescription.focus();
+}
+
 function handleInventoryClick(event) {
+  const editButton = event.target.closest("[data-edit-barcode]");
+  if (editButton) {
+    openEditModal(editButton.dataset.editBarcode);
+    return;
+  }
+
   const unitButton = event.target.closest("[data-remove-units-barcode]");
   if (unitButton) {
     removeUnits(unitButton.dataset.removeUnitsBarcode, unitButton.dataset.currentUnits);

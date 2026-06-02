@@ -421,11 +421,56 @@ function addProduct(data, product) {
     existing.cost = cost;
     existing.quantity = quantity;
     existing.aliases = aliases;
+    mergeLabelDetails(existing, Object.assign({}, product, { barcode, estimatedFields: product.estimatedFields || [] }));
   } else {
-    data.inventory.push({ barcode, description, cost, quantity, aliases });
+    const item = normalizeItemShape(Object.assign({}, product, { barcode, description, cost, quantity, aliases }));
+    mergeLabelDetails(item, Object.assign({}, product, { barcode, estimatedFields: product.estimatedFields || [] }));
+    data.inventory.push(item);
   }
 
   pushActivity(data, "Product added", `${description} is ready to scan`);
+}
+
+function updateProduct(data, barcode, product) {
+  const normalized = normalizeBarcode(barcode);
+  const item = findInventory(data, normalized);
+  const nextBarcode = normalizeBarcode(product.barcode || normalized);
+  const description = String(product.description || product.name || "").trim();
+  const quantity = Number(product.quantity || 0);
+
+  if (!item) {
+    throw new Error("Inventory entry was not found");
+  }
+  if (!nextBarcode || !description) {
+    throw new Error("Product barcode and description are required");
+  }
+  if (!Number.isFinite(quantity) || quantity < 0) {
+    throw new Error("Quantity must be 0 or higher");
+  }
+
+  const duplicate = data.inventory.find((candidate) => candidate !== item && normalizeBarcode(candidate.barcode) === nextBarcode);
+  if (duplicate) {
+    throw new Error("Another inventory entry already uses that barcode");
+  }
+
+  item.barcode = nextBarcode;
+  item.description = description;
+  item.cost = Number.isFinite(Number(product.cost)) ? Number(product.cost) : Number(item.cost || 0);
+  item.quantity = quantity;
+  item.aliases = Array.isArray(product.aliases) ? product.aliases.map(normalizeBarcode).filter(Boolean) : item.aliases || [];
+  const details = labelDetailsFromText(
+    [product.labelType, product.description, product.modelRef, product.origin].filter(Boolean).join("\n"),
+    nextBarcode
+  );
+  item.labelType = String(product.labelType || "").trim();
+  item.packageId = String(product.packageId || details.packageId || "").trim();
+  item.barcodePrefix = String(product.barcodePrefix || details.barcodePrefix || "").trim();
+  item.dpn = String(product.dpn || "").trim();
+  item.modelRef = String(product.modelRef || "").trim();
+  item.origin = String(product.origin || "").trim();
+  item.estimatedFields = [];
+
+  pushActivity(data, "Product edited", `${description} was updated`);
 }
 
 function deleteProduct(data, barcode) {
@@ -963,6 +1008,24 @@ async function handleApi(req, res, url) {
       const data = await runMutation(() => {
         const nextData = readDb();
         addProduct(nextData, body);
+        writeDb(nextData);
+        return nextData;
+      });
+      sendJson(res, 200, data);
+    } catch (error) {
+      sendError(res, 400, error.message);
+    }
+    return;
+  }
+
+  if (req.method === "PUT" && url.pathname.startsWith("/api/products/")) {
+    const barcode = decodeURIComponent(url.pathname.replace("/api/products/", ""));
+    const body = await readBody(req);
+
+    try {
+      const data = await runMutation(() => {
+        const nextData = readDb();
+        updateProduct(nextData, barcode, body);
         writeDb(nextData);
         return nextData;
       });
