@@ -329,6 +329,33 @@ function outgoingScan(data, barcode) {
   };
 }
 
+function removeProductUnits(data, body) {
+  const barcode = normalizeBarcode(body.barcode);
+  const quantity = Math.max(1, Math.round(Number(body.quantity || 1)));
+  const item = findInventory(data, barcode);
+
+  if (!item) {
+    throw new Error("Inventory entry was not found");
+  }
+  if (!Number.isFinite(quantity) || quantity < 1) {
+    throw new Error("Units must be 1 or higher");
+  }
+  if (item.quantity < quantity) {
+    throw new Error(`Only ${item.quantity} unit${item.quantity === 1 ? "" : "s"} available`);
+  }
+
+  item.quantity -= quantity;
+  const entry = makeLogEntry("Outgoing adjustment", item, quantity, "outgoing");
+  data.outgoing.unshift(entry);
+  pushActivity(data, "Units removed", `${itemLabel(item)} quantity reduced to ${item.quantity}`);
+
+  return {
+    matched: true,
+    mode: "outgoing",
+    scannedBarcode: barcode,
+  };
+}
+
 function addProduct(data, product) {
   const barcode = normalizeBarcode(product.barcode);
   const description = String(product.description || product.name || "").trim();
@@ -744,6 +771,24 @@ async function handleApi(req, res, url) {
         addProduct(nextData, body);
         writeDb(nextData);
         return nextData;
+      });
+      sendJson(res, 200, data);
+    } catch (error) {
+      sendError(res, 400, error.message);
+    }
+    return;
+  }
+
+  if (req.method === "PATCH" && url.pathname.startsWith("/api/products/")) {
+    const barcode = decodeURIComponent(url.pathname.replace("/api/products/", ""));
+    const body = await readBody(req);
+
+    try {
+      const data = await runMutation(() => {
+        const nextData = readDb();
+        const adjustment = removeProductUnits(nextData, Object.assign({}, body, { barcode }));
+        writeDb(nextData);
+        return Object.assign({}, nextData, adjustment);
       });
       sendJson(res, 200, data);
     } catch (error) {

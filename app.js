@@ -372,7 +372,12 @@ function renderInventory(items) {
           <td><code>${escapeHtml(item.barcode)}</code></td>
           <td>${escapeHtml(item.description || item.name || "Unassigned item")}</td>
           <td class="${changed ? "changed" : ""}">${item.quantity}</td>
-          <td><button class="delete-button" type="button" data-delete-barcode="${escapeHtml(item.barcode)}">Delete</button></td>
+          <td>
+            <div class="row-actions">
+              <button class="unit-button" type="button" data-remove-units-barcode="${escapeHtml(item.barcode)}" data-current-units="${item.quantity}">Remove units</button>
+              <button class="delete-button" type="button" data-delete-barcode="${escapeHtml(item.barcode)}">Delete</button>
+            </div>
+          </td>
         </tr>
       `;
     })
@@ -624,6 +629,45 @@ async function deleteProduct(barcode) {
   }
 }
 
+async function removeUnits(barcode, currentUnits) {
+  const normalized = normalizeScan(barcode);
+  const available = Number(currentUnits || 0);
+  if (!normalized || available <= 0) {
+    setStatus("No units available to remove", "warn");
+    flash(el.inventoryPanel, "scan-warning");
+    return;
+  }
+
+  const entered = window.prompt(`Remove how many units from ${normalized}?`, "1");
+  if (entered === null) return;
+
+  const quantity = Math.round(Number(entered));
+  if (!Number.isFinite(quantity) || quantity < 1) {
+    setStatus("Enter a unit count of 1 or higher", "warn");
+    flash(el.inventoryPanel, "scan-warning");
+    return;
+  }
+  if (quantity > available) {
+    setStatus(`Only ${available} unit${available === 1 ? "" : "s"} available`, "warn");
+    flash(el.inventoryPanel, "scan-warning");
+    return;
+  }
+
+  try {
+    const data = await api(`/api/products/${encodeURIComponent(normalized)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ quantity }),
+    });
+    renderState(data);
+    setStatus(`${quantity} unit${quantity === 1 ? "" : "s"} removed`, "ok");
+    flash(el.inventoryPanel, "inventory-updated");
+    flash(el.historyPanel, "scan-success");
+  } catch (error) {
+    setStatus(error.message, "warn");
+    flash(el.inventoryPanel, "scan-warning");
+  }
+}
+
 async function loadDemoData() {
   try {
     const data = await api("/api/demo", { method: "POST" });
@@ -659,6 +703,12 @@ function closeEntryModal() {
 }
 
 function handleInventoryClick(event) {
+  const unitButton = event.target.closest("[data-remove-units-barcode]");
+  if (unitButton) {
+    removeUnits(unitButton.dataset.removeUnitsBarcode, unitButton.dataset.currentUnits);
+    return;
+  }
+
   const deleteButton = event.target.closest("[data-delete-barcode]");
   if (!deleteButton) return;
   deleteProduct(deleteButton.dataset.deleteBarcode);

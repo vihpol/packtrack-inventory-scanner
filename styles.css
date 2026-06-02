@@ -1017,6 +1017,13 @@ td code {
   min-height: 34px;
 }
 
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .delete-button {
   min-height: 32px;
   border: 1px solid rgba(180, 83, 9, 0.26);
@@ -1029,6 +1036,20 @@ td code {
   background: rgba(255, 183, 27, 0.18);
   color: #ffe1a3;
   box-shadow: 0 8px 18px rgba(180, 83, 9, 0.12);
+}
+
+.unit-button {
+  min-height: 32px;
+  border: 1px solid rgba(0, 191, 195, 0.24);
+  background: rgba(0, 191, 195, 0.08);
+  color: #9ff8fb;
+  box-shadow: none;
+}
+
+.unit-button:hover {
+  background: rgba(0, 191, 195, 0.16);
+  color: #d9feff;
+  box-shadow: 0 8px 18px rgba(0, 191, 195, 0.12);
 }
 
 .ghost-button {
