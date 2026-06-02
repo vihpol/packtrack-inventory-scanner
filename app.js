@@ -368,14 +368,14 @@ function renderInventory(items) {
       const changed = previous !== undefined && previous !== item.quantity;
       return `
         <tr>
-          <td>${escapeHtml(displayField(item.labelType || item.description || item.name))}</td>
+          <td>${renderField(item.labelType || item.description || item.name, item, "labelType")}</td>
           <td>
-            <code>${escapeHtml(item.packageId || item.barcode)}</code>
+            <code>${escapeHtml(item.packageId || item.barcode)}</code>${renderEstimatedBadge(item, item.packageId ? "packageId" : "barcode")}
             ${item.barcodePrefix ? `<span class="cell-note">Prefix ${escapeHtml(item.barcodePrefix)}</span>` : ""}
           </td>
-          <td>${escapeHtml(displayField(item.dpn))}</td>
-          <td>${escapeHtml(displayField(item.modelRef))}</td>
-          <td>${escapeHtml(displayField(item.origin))}</td>
+          <td>${renderField(item.dpn, item, "dpn")}</td>
+          <td>${renderField(item.modelRef, item, "modelRef")}</td>
+          <td>${renderField(item.origin, item, "origin")}</td>
           <td class="${changed ? "changed" : ""}">${item.quantity}</td>
           <td>
             <div class="row-actions">
@@ -393,6 +393,22 @@ function renderInventory(items) {
 
 function displayField(value) {
   return String(value || "").trim() || "-";
+}
+
+function estimatedFields(item) {
+  return Array.isArray(item.estimatedFields) ? item.estimatedFields : [];
+}
+
+function isEstimated(item, field) {
+  return estimatedFields(item).includes(field);
+}
+
+function renderEstimatedBadge(item, field) {
+  return isEstimated(item, field) ? `<span class="estimate-badge" title="Estimated from the label photo. Verify before final use.">Estimated</span>` : "";
+}
+
+function renderField(value, item, field) {
+  return `${escapeHtml(displayField(value))}${renderEstimatedBadge(item, field)}`;
 }
 
 function renderScanList(container, entries, emptyText) {
@@ -457,6 +473,7 @@ async function scanProduct({
   dpn = "",
   modelRef = "",
   origin = "",
+  estimatedFields = [],
 }) {
   const normalized = normalizeScan(barcode);
   if (!normalized) return;
@@ -479,6 +496,7 @@ async function scanProduct({
         dpn,
         modelRef,
         origin,
+        estimatedFields,
       }),
     });
 

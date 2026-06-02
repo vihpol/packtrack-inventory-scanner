@@ -75,6 +75,7 @@
         dpn: details.dpn || "",
         modelRef: details.modelRef || "",
         origin: details.origin || "",
+        estimatedFields: Array.isArray(details.estimatedFields) ? details.estimatedFields : [],
       });
     }
 
@@ -95,6 +96,7 @@
         dpn: details.dpn || "",
         modelRef: details.modelRef || "",
         origin: details.origin || "",
+        estimatedFields: Array.isArray(details.estimatedFields) ? details.estimatedFields : [],
       }),
     }).catch((error) => {
       if (error.name === "AbortError") {
@@ -128,8 +130,9 @@
         if (navigator.vibrate) navigator.vibrate(160);
         const quantity = Math.max(1, Number(details.quantity || 1));
         const delta = selectedMode() === "outgoing" ? "-1" : `+${quantity}`;
+        const estimateNote = Array.isArray(details.estimatedFields) && details.estimatedFields.length ? " • estimated fields shown on dashboard" : "";
         setProgress("saved");
-        setScannerStatus(`Saved ${normalized} (${delta})`, "ok");
+        setScannerStatus(`Saved ${normalized} (${delta})${estimateNote}`, "ok");
       }
     } catch (error) {
       if (typeof window.playScanPing === "function") window.playScanPing("warn");
@@ -170,6 +173,7 @@
         dpn: analysis.dpn || "",
         modelRef: analysis.modelRef || "",
         origin: analysis.origin || "",
+        estimatedFields: Array.isArray(analysis.estimatedFields) ? analysis.estimatedFields : [],
       });
     } catch (error) {
       console.error("Photo scan failed:", error);

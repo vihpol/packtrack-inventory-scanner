@@ -218,7 +218,20 @@ function normalizeItemShape(item) {
     dpn: String(item.dpn || labelDetails.dpn || "").trim(),
     modelRef: String(item.modelRef || labelDetails.modelRef || "").trim(),
     origin: String(item.origin || labelDetails.origin || "").trim(),
+    estimatedFields: normalizeEstimatedFields(item.estimatedFields),
   };
+}
+
+function normalizeEstimatedFields(fields) {
+  const allowedFields = new Set(["barcode", "description", "labelType", "packageId", "barcodePrefix", "dpn", "modelRef", "origin"]);
+  if (!Array.isArray(fields)) return [];
+  return Array.from(
+    new Set(
+      fields
+        .map((field) => String(field || "").trim())
+        .filter((field) => allowedFields.has(field))
+    )
+  );
 }
 
 function mergeLabelDetails(item, product) {
@@ -232,6 +245,7 @@ function mergeLabelDetails(item, product) {
     const value = String(product[field] || details[field] || "").trim();
     if (value) item[field] = value;
   });
+  item.estimatedFields = normalizeEstimatedFields(product.estimatedFields || item.estimatedFields);
 }
 
 function cleanDescription(product, barcode) {
@@ -274,6 +288,7 @@ function makeLogEntry(type, item, quantity, direction) {
     quantity,
     direction,
     time: now(),
+    estimatedFields: normalizeEstimatedFields(item.estimatedFields),
   };
 }
 
@@ -536,6 +551,7 @@ function cleanAnalysisResult(result) {
     dpn: String(result.dpn || details.dpn || "").trim(),
     modelRef: String(result.modelRef || details.modelRef || "").trim(),
     origin: String(result.origin || details.origin || "").trim(),
+    estimatedFields: normalizeEstimatedFields(result.estimatedFields),
     confidence: String(result.confidence || "").trim(),
     notes: String(result.notes || "").trim(),
   };
@@ -793,6 +809,8 @@ async function localLabelAnalysis(image) {
 
     const barcode = primaryBarcodeFromLabel(ocrText, decoded);
     const details = labelDetailsFromText(ocrText, barcode);
+    const estimatedFields = ["description", "labelType"];
+    if (!decoded.length && barcode) estimatedFields.push("barcode");
     return {
       barcode,
       description: details.labelType || inferLabelDescription(ocrText, barcode),
@@ -803,6 +821,7 @@ async function localLabelAnalysis(image) {
       dpn: details.dpn,
       modelRef: details.modelRef,
       origin: details.origin,
+      estimatedFields,
       confidence: decoded.length ? "barcode decoded locally" : "OCR estimate",
       notes: decoded.length ? "Decoded with local zbar barcode reader." : "No barcode decoded; used local OCR text.",
     };
@@ -830,8 +849,8 @@ async function analyzeLabelPhoto(image) {
             type: "input_text",
             text:
               "Analyze this network equipment or shipping label photo. Extract the best visible SKU, serial, barcode text, model, hardware type, and quantity/units. " +
-              "Return only JSON with keys: barcode, description, quantity, labelType, packageId, barcodePrefix, dpn, modelRef, origin, confidence, notes. " +
-              "Use barcode for the primary serial/SKU/barcode value. Extract DP/N, package ID prefix, model/reference codes like Z9432F-AC, and origin like Made in Taiwan when visible. Use quantity 1 if no quantity is visible. Do not guess values that are not visible.",
+              "Return only JSON with keys: barcode, description, quantity, labelType, packageId, barcodePrefix, dpn, modelRef, origin, estimatedFields, confidence, notes. " +
+              "Use barcode for the primary serial/SKU/barcode value. Extract DP/N, package ID prefix, model/reference codes like Z9432F-AC, and origin like Made in Taiwan when visible. Use quantity 1 if no quantity is visible. Do not guess values that are not visible. If any field is inferred instead of directly visible, include that field name in estimatedFields.",
           },
           {
             type: "input_image",

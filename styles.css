@@ -968,6 +968,22 @@ td code {
   font-weight: 800;
 }
 
+.estimate-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  border: 1px solid rgba(255, 183, 27, 0.38);
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: rgba(255, 183, 27, 0.12);
+  color: #ffd88a;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
 .sheet-table {
   min-width: 100%;
 }
