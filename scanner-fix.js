@@ -189,6 +189,12 @@
         mode: selectedMode(),
         description: details.description || "",
         quantity,
+        labelType: details.labelType || "",
+        packageId: details.packageId || "",
+        barcodePrefix: details.barcodePrefix || "",
+        dpn: details.dpn || "",
+        modelRef: details.modelRef || "",
+        origin: details.origin || "",
       });
     }
 
@@ -203,6 +209,12 @@
         mode: selectedMode(),
         description: details.description || "",
         quantity,
+        labelType: details.labelType || "",
+        packageId: details.packageId || "",
+        barcodePrefix: details.barcodePrefix || "",
+        dpn: details.dpn || "",
+        modelRef: details.modelRef || "",
+        origin: details.origin || "",
       }),
     }).catch((error) => {
       if (error.name === "AbortError") {
@@ -393,6 +405,12 @@
       await handleDecoded(analysis.barcode, analysis, {
         description: analysis.description || "",
         quantity: analysis.quantity || 1,
+        labelType: analysis.labelType || "",
+        packageId: analysis.packageId || "",
+        barcodePrefix: analysis.barcodePrefix || "",
+        dpn: analysis.dpn || "",
+        modelRef: analysis.modelRef || "",
+        origin: analysis.origin || "",
       });
     } catch (error) {
       console.error("Photo scan failed:", error);

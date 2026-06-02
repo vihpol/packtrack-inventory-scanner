@@ -202,13 +202,36 @@ function normalizeBarcode(value) {
 }
 
 function normalizeItemShape(item) {
+  const labelDetails = labelDetailsFromText(
+    [item.rawText, item.description, item.modelRef, item.origin].filter(Boolean).join("\n"),
+    item.barcode
+  );
   return {
     barcode: normalizeBarcode(item.barcode),
     description: String(item.description || item.name || "Unidentified item").trim(),
     cost: Number.isFinite(Number(item.cost)) ? Number(item.cost) : 0,
     quantity: Number.isFinite(Number(item.quantity)) ? Number(item.quantity) : 0,
     aliases: Array.isArray(item.aliases) ? item.aliases.map(normalizeBarcode).filter(Boolean) : [],
+    labelType: String(item.labelType || labelDetails.labelType || "").trim(),
+    packageId: String(item.packageId || labelDetails.packageId || "").trim(),
+    barcodePrefix: String(item.barcodePrefix || labelDetails.barcodePrefix || "").trim(),
+    dpn: String(item.dpn || labelDetails.dpn || "").trim(),
+    modelRef: String(item.modelRef || labelDetails.modelRef || "").trim(),
+    origin: String(item.origin || labelDetails.origin || "").trim(),
   };
+}
+
+function mergeLabelDetails(item, product) {
+  const details = labelDetailsFromText(
+    [product.rawText, product.description, product.modelRef, product.origin].filter(Boolean).join("\n"),
+    product.barcode || item.barcode
+  );
+  const fields = ["labelType", "packageId", "barcodePrefix", "dpn", "modelRef", "origin"];
+
+  fields.forEach((field) => {
+    const value = String(product[field] || details[field] || "").trim();
+    if (value) item[field] = value;
+  });
 }
 
 function cleanDescription(product, barcode) {
@@ -283,9 +306,11 @@ function incomingScan(data, product) {
     if (providedCost) {
       item.cost = cost;
     }
+    mergeLabelDetails(item, Object.assign({}, product, { barcode }));
     item.quantity += quantity;
   } else {
     item = normalizeItemShape({ barcode, description, cost, quantity });
+    mergeLabelDetails(item, Object.assign({}, product, { barcode }));
     data.inventory.push(item);
   }
 
@@ -492,6 +517,10 @@ function parseJsonFromText(text) {
 
 function cleanAnalysisResult(result) {
   const barcode = normalizeBarcode(result.barcode || result.sku || result.serial || "");
+  const details = labelDetailsFromText(
+    [result.description, result.item, result.model, result.notes, result.rawText].filter(Boolean).join("\n"),
+    barcode
+  );
   const description = inferLabelDescription(
     [result.description, result.item, result.model, result.notes].filter(Boolean).join("\n"),
     barcode
@@ -501,6 +530,12 @@ function cleanAnalysisResult(result) {
     barcode,
     description,
     quantity: Number.isFinite(quantity) && quantity > 0 ? Math.round(quantity) : 1,
+    labelType: String(result.labelType || details.labelType || "").trim(),
+    packageId: String(result.packageId || details.packageId || "").trim(),
+    barcodePrefix: String(result.barcodePrefix || details.barcodePrefix || "").trim(),
+    dpn: String(result.dpn || details.dpn || "").trim(),
+    modelRef: String(result.modelRef || details.modelRef || "").trim(),
+    origin: String(result.origin || details.origin || "").trim(),
     confidence: String(result.confidence || "").trim(),
     notes: String(result.notes || "").trim(),
   };
@@ -540,6 +575,9 @@ function barcodeCandidatesFromText(text) {
 }
 
 function inferLabelDescription(text, barcode) {
+  const details = labelDetailsFromText(text, barcode);
+  if (details.labelType) return details.labelType;
+
   const content = `${String(text || "")}\n${String(barcode || "")}`;
   const compactBarcode = normalizeBarcode(barcode);
   const lines = String(text || "")
@@ -567,6 +605,60 @@ function inferLabelDescription(text, barcode) {
   }
 
   return compactBarcode ? "Network equipment label" : "Scanned label";
+}
+
+function labelDetailsFromText(text, barcode) {
+  const compactBarcode = normalizeBarcode(barcode);
+  const content = `${String(text || "")}\n${compactBarcode}`;
+  const normalizedText = content.replace(/\s+/g, " ");
+  const details = {
+    labelType: "",
+    packageId: "",
+    barcodePrefix: "",
+    dpn: "",
+    modelRef: "",
+    origin: "",
+  };
+
+  const packageMatch = normalizedText.match(/\bPKG\s*ID\s*\(?([A-Z0-9]{2,4})\)?\s*([A-Z0-9._-]{8,})/i);
+  if (packageMatch) {
+    details.barcodePrefix = packageMatch[1].toUpperCase();
+    details.packageId = packageMatch[2].toUpperCase();
+  } else if (/^[A-Z0-9]{2}[A-Z0-9._-]{8,}$/i.test(compactBarcode)) {
+    details.barcodePrefix = compactBarcode.slice(0, 2);
+    details.packageId = compactBarcode.slice(2);
+  }
+
+  const dpnMatch =
+    normalizedText.match(/\bD\s*P\s*\/?\s*N\s*[:#-]?\s*([0O][A-Z0-9]{5})\b/i) ||
+    compactBarcode.match(/(0[A-Z0-9]{5})\d{2}$/i);
+  if (dpnMatch) {
+    details.dpn = dpnMatch[1].toUpperCase().replace(/^O/, "0");
+  }
+
+  const modelMatch =
+    normalizedText.match(/\(([A-Z0-9]{2,}[-_][A-Z0-9-]{2,})\)/i) ||
+    normalizedText.match(/\b((?:S|N|R)\d{4}[-_][A-Z0-9-]+|QSFP[A-Z0-9-]*|SFP[A-Z0-9-]*)\b/i);
+  if (modelMatch) {
+    details.modelRef = modelMatch[1].toUpperCase();
+  }
+
+  const originMatch = normalizedText.match(/\bMade\s+in\s+([A-Za-z][A-Za-z\s-]{2,30})/i);
+  if (originMatch) {
+    details.origin = `Made in ${cleanLabelText(originMatch[1]).replace(/\b\w/g, (letter) => letter.toUpperCase())}`;
+  }
+
+  details.labelType = inferLabelTypeFromDetails(details, content, compactBarcode);
+  return details;
+}
+
+function inferLabelTypeFromDetails(details, content, barcode) {
+  if (/QSFP|SFP|XFP|AOC|DAC|OPTIC|TRANSCEIVER/i.test(content)) return "Optic / transceiver label";
+  if (/(^|\b)R\d{4}(\b|[-_])|ROUTER/i.test(content) || /^3R[A-Z0-9]/i.test(barcode)) return "Router serial label";
+  if (/(^|\b)(S\d{4}|N\d{4})(\b|[-_])|SWITCH/i.test(content) || /^3S[A-Z0-9]/i.test(barcode)) return "Switch package label";
+  if (/CARTON|CTN|BOX|PKG|PACKAGE|PALLET|SHIP|TRACK|WAYBILL/i.test(content) || /^\d{18,}$/.test(barcode)) return "Carton / shipping label";
+  if (/(^|\b)(SN|SERIAL|S\/N)(\b|[A-Z0-9])/i.test(content)) return "Equipment serial label";
+  return barcode ? "Network equipment label" : "Scanned label";
 }
 
 function cleanLabelText(value) {
@@ -644,20 +736,24 @@ async function localLabelAnalysis(image) {
       if (decoded.length) break;
     }
 
-    let ocrText = "";
-    if (!decoded.length) {
-      const ocrImage = path.join(tempDir, "ocr.png");
-      await execFile("convert", [originalPath, "-auto-orient", "-colorspace", "Gray", "-normalize", "-resize", "3200x3200>", ocrImage]);
-      const ocr = await execFile("tesseract", [ocrImage, "stdout", "--psm", "6"]);
-      ocrText = ocr.stdout;
-    }
+    const ocrImage = path.join(tempDir, "ocr.png");
+    await execFile("convert", [originalPath, "-auto-orient", "-colorspace", "Gray", "-normalize", "-resize", "3200x3200>", ocrImage]);
+    const ocr = await execFile("tesseract", [ocrImage, "stdout", "--psm", "6"]);
+    const ocrText = ocr.stdout;
 
     const candidates = uniqueValues(decoded).concat(barcodeCandidatesFromText(ocrText));
     const barcode = normalizeBarcode(candidates[0] || "");
+    const details = labelDetailsFromText(ocrText, barcode);
     return {
       barcode,
-      description: inferLabelDescription(ocrText, barcode),
+      description: details.labelType || inferLabelDescription(ocrText, barcode),
       quantity: 1,
+      labelType: details.labelType,
+      packageId: details.packageId,
+      barcodePrefix: details.barcodePrefix,
+      dpn: details.dpn,
+      modelRef: details.modelRef,
+      origin: details.origin,
       confidence: decoded.length ? "barcode decoded locally" : "OCR estimate",
       notes: decoded.length ? "Decoded with local zbar barcode reader." : "No barcode decoded; used local OCR text.",
     };
@@ -685,8 +781,8 @@ async function analyzeLabelPhoto(image) {
             type: "input_text",
             text:
               "Analyze this network equipment or shipping label photo. Extract the best visible SKU, serial, barcode text, model, hardware type, and quantity/units. " +
-              "Return only JSON with keys: barcode, description, quantity, confidence, notes. " +
-              "Use barcode for the primary serial/SKU/barcode value. Use description for a concise inventory item name. Use quantity 1 if no quantity is visible. Do not guess values that are not visible.",
+              "Return only JSON with keys: barcode, description, quantity, labelType, packageId, barcodePrefix, dpn, modelRef, origin, confidence, notes. " +
+              "Use barcode for the primary serial/SKU/barcode value. Extract DP/N, package ID prefix, model/reference codes like Z9432F-AC, and origin like Made in Taiwan when visible. Use quantity 1 if no quantity is visible. Do not guess values that are not visible.",
           },
           {
             type: "input_image",

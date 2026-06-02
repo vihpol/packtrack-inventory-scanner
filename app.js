@@ -357,7 +357,7 @@ function renderInventory(items) {
   if (items.length === 0) {
     el.inventoryBody.innerHTML = `
       <tr>
-        <td colspan="4">No stock records</td>
+        <td colspan="7">No stock records</td>
       </tr>
     `;
     previousInventory = new Map();
@@ -370,8 +370,14 @@ function renderInventory(items) {
       const changed = previous !== undefined && previous !== item.quantity;
       return `
         <tr>
-          <td><code>${escapeHtml(item.barcode)}</code></td>
-          <td>${escapeHtml(item.description || item.name || "Unassigned item")}</td>
+          <td>${escapeHtml(displayField(item.labelType || item.description || item.name))}</td>
+          <td>
+            <code>${escapeHtml(item.packageId || item.barcode)}</code>
+            ${item.barcodePrefix ? `<span class="cell-note">Prefix ${escapeHtml(item.barcodePrefix)}</span>` : ""}
+          </td>
+          <td>${escapeHtml(displayField(item.dpn))}</td>
+          <td>${escapeHtml(displayField(item.modelRef))}</td>
+          <td>${escapeHtml(displayField(item.origin))}</td>
           <td class="${changed ? "changed" : ""}">${item.quantity}</td>
           <td>
             <div class="row-actions">
@@ -385,6 +391,10 @@ function renderInventory(items) {
     .join("");
 
   previousInventory = new Map(items.map((item) => [item.barcode, item.quantity]));
+}
+
+function displayField(value) {
+  return String(value || "").trim() || "-";
 }
 
 function renderScanList(container, entries, emptyText) {
@@ -437,7 +447,19 @@ async function loadScannerLink() {
   }
 }
 
-async function scanProduct({ barcode, mode = "smart", description = "", cost = 0, quantity = 1 }) {
+async function scanProduct({
+  barcode,
+  mode = "smart",
+  description = "",
+  cost = 0,
+  quantity = 1,
+  labelType = "",
+  packageId = "",
+  barcodePrefix = "",
+  dpn = "",
+  modelRef = "",
+  origin = "",
+}) {
   const normalized = normalizeScan(barcode);
   if (!normalized) return;
 
@@ -453,6 +475,12 @@ async function scanProduct({ barcode, mode = "smart", description = "", cost = 0
         description,
         cost,
         quantity,
+        labelType,
+        packageId,
+        barcodePrefix,
+        dpn,
+        modelRef,
+        origin,
       }),
     });
 

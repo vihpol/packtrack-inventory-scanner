@@ -1004,6 +1004,14 @@ td code {
   color: #70eef0;
 }
 
+.cell-note {
+  display: block;
+  margin-top: 4px;
+  color: rgba(216, 238, 238, 0.62);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
 .sheet-table {
   min-width: 100%;
 }
