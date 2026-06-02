@@ -25,7 +25,7 @@
 
           <nav class="sidebar-nav" aria-label="Dashboard pages">
             <button class="active" type="button" data-view="inventory" aria-current="page">Stock on hand</button>
-            <button type="button" data-view="history">Scan history</button>
+            <button type="button" data-view="history">Scanned products</button>
           </nav>
 
           <details class="sidebar-tools">
@@ -61,7 +61,7 @@
               <span></span><span></span><span></span><span></span><span></span><span></span>
               <i></i><i></i><i></i><i></i>
             </div>
-            <p>Incoming / outgoing log</p>
+            <p>Scanned product results</p>
           </div>
         </section>
 
@@ -150,14 +150,14 @@
         <article id="historyPanel" class="sheet-section" data-view-panel="history" hidden>
           <div class="history-grid">
             <section class="history-card">
-              <h3>Incoming</h3>
+              <h3>Received scans</h3>
               <div class="table-wrap">
                 <table class="sheet-table">
                   <thead>
                     <tr>
-                      <th>Scanned</th>
-                      <th>SKU / Serial</th>
-                      <th>Item</th>
+                      <th>Scan time</th>
+                      <th>Barcode / serial</th>
+                      <th>Product description</th>
                       <th>Units</th>
                     </tr>
                   </thead>
@@ -167,14 +167,14 @@
             </section>
 
             <section class="history-card">
-              <h3>Outgoing</h3>
+              <h3>Issued scans</h3>
               <div class="table-wrap">
                 <table class="sheet-table">
                   <thead>
                     <tr>
-                      <th>Scanned</th>
-                      <th>SKU / Serial</th>
-                      <th>Item</th>
+                      <th>Scan time</th>
+                      <th>Barcode / serial</th>
+                      <th>Product description</th>
                       <th>Units</th>
                     </tr>
                   </thead>

@@ -62,8 +62,8 @@ const dashboardViews = {
     description: "Current equipment count.",
   },
   history: {
-    title: "Scan history",
-    description: "Incoming and outgoing activity.",
+    title: "Scanned products",
+    description: "Each scan creates a row with the barcode, product description, and unit change.",
   },
 };
 
@@ -283,8 +283,8 @@ function flash(element, className) {
 
 function renderState(data) {
   renderInventory(data.inventory || []);
-  renderScanList(el.incomingLog, data.incoming || [], "No incoming activity");
-  renderScanList(el.outgoingLog, data.outgoing || [], "No outgoing activity");
+  renderScanList(el.incomingLog, data.incoming || [], "No received scans yet");
+  renderScanList(el.outgoingLog, data.outgoing || [], "No issued scans yet");
   renderMetrics(data);
   renderLastScan(data);
 }
