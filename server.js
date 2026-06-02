@@ -492,7 +492,10 @@ function parseJsonFromText(text) {
 
 function cleanAnalysisResult(result) {
   const barcode = normalizeBarcode(result.barcode || result.sku || result.serial || "");
-  const description = String(result.description || result.item || result.model || "").trim();
+  const description = inferLabelDescription(
+    [result.description, result.item, result.model, result.notes].filter(Boolean).join("\n"),
+    barcode
+  );
   const quantity = Number(result.quantity || result.units || 1);
   return {
     barcode,
@@ -536,15 +539,42 @@ function barcodeCandidatesFromText(text) {
     .sort((a, b) => b.length - a.length);
 }
 
-function descriptionFromOcr(text, barcode) {
+function inferLabelDescription(text, barcode) {
+  const content = `${String(text || "")}\n${String(barcode || "")}`;
+  const compactBarcode = normalizeBarcode(barcode);
   const lines = String(text || "")
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  const modelLine =
-    lines.find((line) => /S\d{4}|N\d{4}|switch|router|optic|transceiver/i.test(line));
-  if (modelLine) return modelLine.replace(/\s+/g, " ").slice(0, 90);
-  return barcode ? "Network equipment label" : "Scanned label";
+  const modelLine = lines.find((line) =>
+    /(^|\b)(S\d{4}|N\d{4}|R\d{4}|QSFP|SFP|XFP|AOC|DAC|switch|router|optic|transceiver)(\b|[-_])/i.test(line)
+  );
+
+  if (/QSFP|SFP|XFP|AOC|DAC|OPTIC|TRANSCEIVER/i.test(content)) {
+    return modelLine ? cleanLabelText(modelLine) : "Optic / transceiver label";
+  }
+  if (/(^|\b)R\d{4}(\b|[-_])|ROUTER/i.test(content) || /^3R[A-Z0-9]/i.test(compactBarcode)) {
+    return modelLine ? cleanLabelText(modelLine) : "Router serial label";
+  }
+  if (/(^|\b)(S\d{4}|N\d{4})(\b|[-_])|SWITCH/i.test(content) || /^3S[A-Z0-9]/i.test(compactBarcode)) {
+    return modelLine ? cleanLabelText(modelLine) : "Switch serial label";
+  }
+  if (/CARTON|CTN|BOX|PKG|PACKAGE|PALLET|SHIP|TRACK|WAYBILL/i.test(content) || /^\d{18,}$/.test(compactBarcode)) {
+    return "Carton / shipping label";
+  }
+  if (/(^|\b)(SN|SERIAL|S\/N)(\b|[A-Z0-9])/i.test(content)) {
+    return "Equipment serial label";
+  }
+
+  return compactBarcode ? "Network equipment label" : "Scanned label";
+}
+
+function cleanLabelText(value) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .replace(/^(model|item|description|type)\s*[:#-]\s*/i, "")
+    .trim()
+    .slice(0, 90);
 }
 
 async function makeImageVariant(inputPath, outputPath, operations) {
@@ -626,7 +656,7 @@ async function localLabelAnalysis(image) {
     const barcode = normalizeBarcode(candidates[0] || "");
     return {
       barcode,
-      description: descriptionFromOcr(ocrText, barcode),
+      description: inferLabelDescription(ocrText, barcode),
       quantity: 1,
       confidence: decoded.length ? "barcode decoded locally" : "OCR estimate",
       notes: decoded.length ? "Decoded with local zbar barcode reader." : "No barcode decoded; used local OCR text.",
